@@ -12,17 +12,345 @@
   /*global console, setTimeout, prompt, alert, btoa, atob,
            Blob, ArrayBuffer, XMLHttpRequest, FileReader, Uint8Array */
 
+  function CancellablePromise(executor, canceller) {
+    this._canceller = canceller;
+    this._promise = new Promise(executor);
+  }
+
+  CancellablePromise.prototype.then = function (a, b) {
+    return this._promise.then(a, b);
+  };
+
+  CancellablePromise.prototype.catch = function (b) {
+    return this._promise.catch(b);
+  };
+
+  // just send a cancel signal
+  CancellablePromise.prototype.cancel = function () {
+    if (typeof this._canceller === "function") {
+      try { this._canceller(); } catch (ignore) {}
+      // return this;
+    }
+    // throw new Error("Cannot cancel this promise.");
+    return this;
+  };
+
+  /**
+   *     all(promises): Promise< promises_fulfilment_values >
+   *     all(promises): Promise< one_rejected_reason >
+   *
+   * Produces a promise that is resolved when all the given `promises` are
+   * fulfilled. The fulfillment value is an array of each of the fulfillment
+   * values of the promise array.
+   *
+   * If one of the promises is rejected, the `all` promise will be rejected with
+   * the same rejected reason, and the remaining unresolved promises recieve a
+   * cancel signal.
+   *
+   * @param  {Array} promises An array of promises
+   * @return {Promise} A promise
+   */
+  CancellablePromise.all = function (promises) {
+    var length = promises.length;
+
+    function onCancel() {
+      var i;
+      for (i = 0; i < promises.length; i += 1) {
+        if (typeof promises[i].cancel === "function") {
+          promises[i].cancel();
+        }
+      }
+    }
+
+    if (length === 0) {
+      return new CancellablePromise(function (done) { done([]); });
+    }
+
+    return new CancellablePromise(function (resolve, reject) {
+      var i, count = 0, results = [];
+      function resolver(i) {
+        return function (value) {
+          count += 1;
+          results[i] = value;
+          if (count === length) {
+            resolve(results);
+          }
+        };
+      }
+
+      function rejecter(err) {
+        reject(err);
+        onCancel();
+      }
+
+      for (i = 0; i < length; i += 1) {
+        promises[i].then(resolver(i), rejecter);
+      }
+    }, onCancel);
+  };
+
+  /**
+   *     race(promises): promise< first_value >
+   *
+   * Produces a promise that is fulfilled when any one of the given promises is
+   * fulfilled. As soon as one of the promises is resolved, whether by being
+   * fulfilled or rejected, all the promises receive a cancel signal.
+   *
+   * @param  {Array} promises An array of promises
+   * @return {Promise} A promise
+   */
+  CancellablePromise.race = function (promises) {
+    var length = promises.length;
+
+    function onCancel() {
+      var i;
+      for (i = 0; i < promises.length; i += 1) {
+        if (typeof promises[i].cancel === "function") {
+          promises[i].cancel();
+        }
+      }
+    }
+
+    return new CancellablePromise(function (resolve, reject) {
+      var i, ended = false;
+      function resolver(value) {
+        if (!ended) {
+          ended = true;
+          resolve(value);
+          onCancel();
+        }
+      }
+
+      function rejecter(err) {
+        if (!ended) {
+          ended = true;
+          reject(err);
+          onCancel();
+        }
+      }
+
+      for (i = 0; i < length; i += 1) {
+        promises[i].then(resolver, rejecter);
+      }
+    }, onCancel);
+  };
+
+  /**
+   *     spawn(generator): CancellablePromise< returned_value >
+   *
+   * Use generator function to do asynchronous operations sequentialy using
+   * `yield` operator.
+   *
+   *     spawn(function* () {
+   *       try {
+   *         var config = yield getConfig();
+   *         config.enableSomething = true;
+   *         yield sleep(1000);
+   *         yield putConfig(config);
+   *       } catch (e) {
+   *         console.error(e);
+   *       }
+   *     });
+   *
+   * @param  {Function} generator A generator function.
+   * @return {CancellablePromise} A new cancellable promise
+   */
+  CancellablePromise.spawn = function (generator) {
+    var promise, cancelled;
+    return new CancellablePromise(function (done, fail) {
+      var g = generator(), prev_value, next = {};
+      function rec(method) {
+        if (cancelled) {
+          return fail(new Error("Cancelled"));
+        }
+        try {
+          next = g[method](prev_value);
+        } catch (e) {
+          return fail(e);
+        }
+        if (next.done) {
+          return done(next.value);
+        }
+        promise = next.value;
+        if (!promise || typeof promise.then !== "function") {
+          // The value is not a thenable. However, the user used `yield`
+          // anyway. It means he wants to left hand to another process.
+          promise = new CancellablePromise(function (d) { d(promise); });
+        }
+        return promise.then(function (a) {
+          prev_value = a;
+          rec("next");
+        }, function (e) {
+          prev_value = e;
+          rec("throw");
+        });
+      }
+      rec("next");
+    }, function () {
+      cancelled = true;
+      if (promise && typeof promise.cancel === "function") {
+        promise.cancel();
+      }
+    });
+  };
+
+  /**
+   *     sequence(thenArray): CancellablePromise< returned_value >
+   *
+   * An alternative to `CancellablePromise.spawn`, but instead of using a
+   * generator function, it uses an array of function like in then chains.
+   * This function works with old ECMAScript version.
+   *
+   *     var config;
+   *     sequence([function () {
+   *       return getConfig();
+   *     }, function (_config) {
+   *       config = _config;
+   *       config.enableSomething = true;
+   *       return sleep(1000);
+   *     }, function () {
+   *       return putConfig(config);
+   *     }, [null, function (e) {
+   *       console.error(e);
+   *     }]]);
+   *
+   * @param  {Array} thenArray An array of function.
+   * @return {CancellablePromise} A new cancellable promise
+   */
+  CancellablePromise.sequence = function (array) {
+    return CancellablePromise.spawn(function () {
+      var i = 0, g;
+      function exec(f, value) {
+        try {
+          value = f(value);
+          if (i === array.length) {
+            return {"done": true, "value": value};
+          }
+          return {"value": value};
+        } catch (e) {
+          return g["throw"](e);
+        }
+      }
+      g = {
+        "next": function (value) {
+          var f;
+          while (i < array.length) {
+            if (Array.isArray(array[i])) {
+              f = array[i][0];
+            } else {
+              f = array[i];
+            }
+            if (typeof f === "function") {
+              i += 1;
+              return exec(f, value);
+            }
+            i += 1;
+          }
+          return {"done": true, "value": value};
+        },
+        "throw": function (value) {
+          var f;
+          while (i < array.length) {
+            if (Array.isArray(array[i])) {
+              f = array[i][1];
+            }
+            if (typeof f === "function") {
+              i += 1;
+              return exec(f, value);
+            }
+            i += 1;
+          }
+          throw value;
+        }
+      };
+      return g;
+    });
+  };
+
+  exports.CancellablePromise = CancellablePromise;
+
+
   var resolve = function (v) {
-    return new Promise(function (r) {
+    return new CancellablePromise(function (r) {
       r(v);
     });
   }, reject = function (v) {
-    return new Promise(function (_, r) {
+    return new CancellablePromise(function (_, r) {
       /*jslint unparam: true */
       r(v);
     });
-  }, resolved = resolve();
+  }, resolved = resolve(), seq = CancellablePromise.sequence;
 
+
+  function JSH(promise, onDone, onFail, previous) {
+    var it = this;
+    if (!promise || typeof promise.then !== "function") {
+      if (typeof onDone === "function") {
+        promise = resolve(promise);
+      } else {
+        it._r = resolve(promise);
+        return;
+      }
+    }
+    function _onDone(v) {
+      delete it._cf;
+      if (it._cancelled) { return; }
+      if (typeof onDone !== "function") {
+        return v;
+      }
+      it._value = onDone(v);
+      if (it._cancelled) {
+        if (it._value && typeof it._value.then === "function" && typeof it._value.cancel === "function") {
+          try { it._value.cancel(); } catch (ignore) {}
+        }
+      }
+      return it._value;
+    }
+    function _onFail(v) {
+      delete it._cf;
+      if (it._cancelled) { return; }
+      if (typeof onFail !== "function") {
+        return reject(v);
+      }
+      it._value = onFail(v);
+      if (it._cancelled) {
+        if (it._value && typeof it._value.then === "function" && typeof it._value.cancel === "function") {
+          try { it._value.cancel(); } catch (ignore) {}
+        }
+      }
+      return it._value;
+    }
+    it._previous = previous;
+    it._c = new Promise(function (d, f) {
+      /*jslint unparam: true */
+      it._cf = f;
+    });
+    it._r = Promise.race([it._c, promise.then(_onDone, _onFail)]);
+  }
+  JSH.prototype.then = function (onDone, onFail) {
+    return new JSH(this._r, onDone, onFail, this);
+  };
+  JSH.prototype.catch = function (onFail) {
+    return this.then(null, onFail);
+  };
+  JSH.prototype.cancel = function () {
+    this._cancelled = true;
+    if (typeof this._cf === "function") {
+      try { this._cf(new Error("Cancelled")); } catch (ignore) {}
+    }
+    if (this._value && typeof this._value.then === "function" && typeof this._value.cancel === "function") {
+      try { this._value.cancel(); } catch (ignore) {}
+    }
+    if (this._previous && typeof this._previous.then === "function" && typeof this._previous.cancel === "function") {
+      try { this._previous.cancel(); } catch (ignore) {}
+    }
+  };
+  JSH.prototype.detach = function () {
+    return new JSH(this._r);
+  };
+
+
+  function emptyFunction() { return; }
   function returnTrue() { return true; }
 
   function asString(value) {
@@ -40,6 +368,39 @@
       o1[key] = o2[key];
     });
     return o1;
+  }
+
+  function objectSetDefaults(o1, o2) {
+    Object.keys(o2).forEach(function (key) {
+      if (o1[key] !== undefined) {
+        o1[key] = o2[key];
+      }
+    });
+    return o1;
+  }
+
+  /**
+   * Allows the user to download `data` as a file which name is defined by
+   * `filename`. The `mimetype` will help the browser to choose the associated
+   * application to open with.
+   *
+   * @param  {String} filename The file name.
+   * @param  {String} mimetype The data type.
+   * @param  {Any} data The data to download.
+   */
+  function saveAs(filename, mimetype, data) {
+    data = window.URL.createObjectURL(new Blob([data], {"type": mimetype}));
+    var a = document.createElement("a");
+    if (a.download !== undefined) {
+      a.download = filename;
+      a.href = data;
+      //a.textContent = 'Downloading...';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } else {
+      window.open(data);
+    }
   }
 
   function range() {
@@ -93,53 +454,81 @@
   }
 
   function readBlobAsText(blob) {
-    return new Promise(function (resolve, reject) {
-      var fr = new FileReader();
+    var fr;
+    return new CancellablePromise(function (resolve, reject) {
+      fr = new FileReader();
       fr.onload = function (ev) { return resolve(ev.target.result); };
       fr.onerror = function () { return reject(new Error("Unable to read blob as text")); };
       fr.readAsText(blob);
+    }, function () {
+      fr.abort();
     });
   }
 
   function readBlobAsArrayBuffer(blob) {
-    return new Promise(function (resolve, reject) {
-      var fr = new FileReader();
+    var fr;
+    return new CancellablePromise(function (resolve, reject) {
+      fr = new FileReader();
       fr.onload = function (ev) { return resolve(ev.target.result); };
       fr.onerror = function () { return reject(new Error("Unable to read blob as ArrayBuffer")); };
       fr.readAsArrayBuffer(blob);
+    }, function () {
+      fr.abort();
     });
   }
 
   function readBlobAsBinaryString(blob) {
-    return new Promise(function (resolve, reject) {
-      var fr = new FileReader();
+    var fr;
+    return new CancellablePromise(function (resolve, reject) {
+      fr = new FileReader();
       fr.onload = function (ev) { return resolve(ev.target.result); };
       fr.onerror = function () { return reject(new Error("Unable to read blob as binary string")); };
       fr.readAsBinaryString(blob);
+    }, function () {
+      fr.abort();
+    });
+  }
+
+  function noCancel(promise) {
+    return new Promise(function (done, fail) {
+      promise.then(done, fail);
     });
   }
 
   function promiseBasedWhile(tester, loop) {
-    return new Promise(function (done, fail) {
+    var cancelled, currentPromise;
+    return new CancellablePromise(function (done, fail) {
+      function onCancel() {
+        fail(new Error("Cancelled"));
+      }
+      function wrappedTester() {
+        if (cancelled) { return onCancel(); }
+        return tester();
+      }
+      function wrappedLoop() {
+        if (cancelled) { return onCancel(); }
+        return loop();
+      }
       function recWithLoop() {
-        resolved.then(tester).then(function (result) {
-          if (result) {
-            return resolved.then(loop).then(recWithLoop);
-          }
+        currentPromise = seq([wrappedTester, function (result) {
+          if (result) { return seq([wrappedLoop, recWithLoop]); }
           done();
-        }).then(null, fail);
+        }, [null, fail]]);
       }
       function recWithoutLoop() {
-        resolved.then(tester).then(function (result) {
+        currentPromise = seq([wrappedTester, function (result) {
           if (result) { return recWithoutLoop(); }
           done();
-        }).then(null, fail);
+        }, [null, fail]]);
       }
       if (typeof loop === "function") {
         recWithLoop();
       } else {
         recWithoutLoop();
       }
+    }, function () {
+      cancelled = true;
+      currentPromise.cancel(); // can throw, don't care
     });
   }
 
@@ -150,21 +539,6 @@
     }};
   }
 
-
-  function JSH(value) {
-    this._value = value;
-    this.promise = new Promise(function (r) { r(value); });
-  }
-
-  JSH.prototype.promise = null;
-
-  JSH.prototype.then = function (a, b) {
-    return new JSH(this.promise.then(a, b));
-  };
-
-  JSH.prototype.catch = function (b) {
-    return new JSH(this.promise.then(null, b));
-  };
 
   JSH.prototype.addMethod = function (name, method) {
     var proto = Object.getPrototypeOf(this);
@@ -177,11 +551,19 @@
         return method.apply(it, [input].concat(args));
       });
     };
+    return this;
   };
 
   JSH.prototype.value = function (value) {
     return this.then(function () {
       return value;
+    });
+  };
+
+  JSH.prototype.call = function (fun) {
+    var args = [].slice.call(arguments, 1);
+    return this.then(function (thisArg) {
+      return fun.apply(thisArg, args);
     });
   };
 
@@ -225,8 +607,7 @@
 
   JSH.prototype.asBlob = function () {
     // TODO if input === undefined, return undefined too ?
-    var it = this;
-    return it.then(function (input) {
+    return this.then(function (input) {
       if (input instanceof ArrayBuffer || input.buffer instanceof ArrayBuffer) {
         return new Blob([input]);
       }
@@ -242,10 +623,9 @@
 
   JSH.prototype.asText = function () {
     // TODO if input === undefined, return undefined too ?
-    var it = this;
-    return it.then(function (input) {
+    return this.then(function (input) {
       if (input === undefined || input === null) {
-        return toThenable("");
+        return "";
       }
       if (typeof input === "string") {
         return input;
@@ -262,8 +642,7 @@
 
   JSH.prototype.asArrayBuffer = function () {
     // TODO if input === undefined, return undefined too ?
-    var it = this;
-    return it.then(function (input) {
+    return this.then(function (input) {
       if (input instanceof Blob) {
         return readBlobAsArrayBuffer(input);
       }
@@ -274,12 +653,35 @@
         return input.buffer;
       }
       if (input === undefined || input === null) {
-        return toThenable("");
+        return "";
       }
       if (typeof input === "string") {
         return input;
       }
       return readBlobAsText(new Blob([input]));
+    });
+  };
+
+  JSH.prototype.asBinaryString = function () {
+    // TODO if input === undefined, return undefined too ?
+    return this.then(function (input) {
+      if (input === undefined || input === null) {
+        return "";
+      }
+      if (typeof input === "string") {
+        // assuming this is already a binary string
+        return input;
+      }
+      if (input instanceof Blob) {
+        return readBlobAsBinaryString(input);
+      }
+      if (input instanceof ArrayBuffer) {
+        return arrayBufferToBinaryString(input);
+      }
+      if (input && input.buffer instanceof ArrayBuffer) {
+        return arrayBufferToBinaryString(input.buffer);
+      }
+      return readBlobAsBinaryString(new Blob([input]));
     });
   };
 
@@ -381,6 +783,40 @@
     });
   };
 
+  JSH.prototype.split = function (separator, limit) {
+    return this.then(function (input) {
+      return input.split(separator, limit);
+    });
+  };
+
+  JSH.prototype.join = function (separator) {
+    return this.then(function (input) {
+      return input.join(separator);
+    });
+  };
+
+  JSH.prototype.replace = function (pattern, by) {
+    return this.then(function (input) {
+      return input.replace(pattern, by);
+    });
+  };
+
+  JSH.prototype.downloadAs = function () {
+    var args = [].reduce.call(arguments, function (prev, value) {
+      var t = typeof value;
+      if (prev[t]) { prev[t].push(value); }
+    }, {"string": [], "object": []});
+    if (!args.object[0]) { args.object[0] = {}; }
+    return this.then(function (input) {
+      saveAs(
+        args.string.shift() || args.object[0].filename,
+        args.string.shift() || args.object[0].mimetype,
+        input
+      );
+      return input;
+    });
+  };
+
   JSH.prototype.forEach = function (callback) {
     return this.then(function (array) {
       if (array.length === 0) { return; }
@@ -391,6 +827,16 @@
           return i < array.length;
         });
       }).then(function () { return array; });
+    });
+  };
+
+  JSH.prototype.forEachLine = function (callback) {
+    return this.asText().split("\n").forEach(callback);
+  };
+
+  JSH.prototype.waitAll = function () {
+    return this.then(function (array) {
+      return CancellablePromise.all(array);
     });
   };
 
@@ -428,7 +874,7 @@
       }
       function incrementStart() { start += step; }
       return promiseBasedWhile(tester, function () {
-        return toThenable(callback(start, input)).then(incrementStart);
+        return new JSH(callback(start, input)).then(incrementStart);
       });
     });
   };
@@ -659,7 +1105,8 @@
     // TODO add option.placeholder
     // TODO add option.windowTitle
     return this.asText().then(function (text) {
-      return new Promise(function (done, fail) {
+      var canceller = emptyFunction;
+      return new CancellablePromise(function (done, fail) {
         var textarea = document.createElement("textarea");
         textarea.style.position = "absolute";
         textarea.placeholder = "Press Ctrl+Enter to validate this textarea, or press Escape to invalidate it.";
@@ -676,6 +1123,9 @@
           }
         }, false);
         document.body.insertBefore(textarea, document.body.firstChild);
+        canceller = function () { textarea.remove(); };
+      }, function () {
+        canceller();
       });
     });
   };
