@@ -9,29 +9,13 @@
         margin: 0;
         height: 100%;
         width: 100%;
-        /* overflow: hidden; */
       }
       .prompt {
         width: 100%;
-        padding: 0;
-        margin: 0;
       }
       .output {
-        padding: 0;
-        margin: 0;
       }
-      /*
-      #terminal {
-        display: block;
-        position: relative;
-        width: 100%;
-        height: 100%;
-      }
-      */
     </style>
-    <!-- link rel="stylesheet" href="http://terminal.jcubic.pl/css/jquery.terminal.css" / -->
-    <!-- script src="http://code.jquery.com/jquery.min.js"></script -->
-    <!-- script src="http://terminal.jcubic.pl/js/jquery.terminal-0.8.8.min.js"></script -->
     <script src="jsh.js"></script>
   </head>
   <body>
@@ -75,30 +59,6 @@
         }
         return s;
       }
-
-      // var terminal;
-      // jQuery(function($, undefined) {
-      //   $('#terminal').terminal(function(command, term) {
-      //     terminal = term;
-      //     if (command !== '') {
-      //       try {
-      //         var result = window.eval(command);
-      //         if (result !== undefined) {
-      //           term.echo(new String(result));
-      //         }
-      //       } catch(e) {
-      //         term.error(new String(e));
-      //       }
-      //     } else {
-      //       term.echo('');
-      //     }
-      //   }, {
-      //     greetings: "Javascript Interpreter",
-      //     name: "js",
-      //     height: window.innerHeight - 30,
-      //     prompt: "js> "
-      //   });
-      // });
     </script>
   </body>
 </html>
