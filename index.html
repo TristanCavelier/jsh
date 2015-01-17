@@ -31,44 +31,46 @@
   </head>
   <body>
     <script>
-      var terminal = document.createElement("div");
-      document.body.appendChild(terminal);
-      jsh.loop(function () {
-        return jsh.then(function () {
-          var input = document.createElement("textarea");
-          input.className = "prompt";
-          input.placeholder = "> Type your command here";
-          input.setAttribute("rows", 1);
-          setTimeout(function () { input.focus(); });
-          terminal.appendChild(input);
-          return new Promise(function (done) {
-            input.addEventListener("keypress", function f(ev) {
-              if (ev.key === "Enter" || ev.keyCode === 13) {
-                if (ev.shiftKey) {
-                  input.setAttribute("rows", input.value.split("\n").length + 1);
-                } else {
-                  input.setAttribute("rows", input.value.split("\n").length);
-                  if (input.value === "") { return ev.preventDefault(); }
-                  input.removeEventListener("keypress", f);
-                  input.setAttribute("class", input.getAttribute("class") + " disabled");
-                  input.disabled = true;
-                  done(input.value);
+      (function () {
+        var terminal = document.createElement("div");
+        document.body.appendChild(terminal);
+        jsh.loop(function () {
+          return jsh.then(function () {
+            var input = document.createElement("textarea");
+            input.className = "prompt";
+            input.placeholder = "> Type your command here";
+            input.setAttribute("rows", 1);
+            setTimeout(function () { input.focus(); });
+            terminal.appendChild(input);
+            return new Promise(function (done) {
+              input.addEventListener("keypress", function f(ev) {
+                if (ev.key === "Enter" || ev.keyCode === 13) {
+                  if (ev.shiftKey) {
+                    input.setAttribute("rows", input.value.split("\n").length + 1);
+                  } else {
+                    input.setAttribute("rows", input.value.split("\n").length);
+                    if (input.value === "") { return ev.preventDefault(); }
+                    input.removeEventListener("keypress", f);
+                    input.setAttribute("class", input.getAttribute("class") + " disabled");
+                    input.disabled = true;
+                    done(input.value);
+                  }
                 }
-              }
+              });
+            });
+          }).then(function (inputValue) {
+            var output = document.createElement("pre");
+            terminal.appendChild(output);
+            return jsh.then(function () {
+              return jsh.value(window.eval(inputValue || "undefined")).asText();
+            }).then(function (eVal) {
+              output.textContent = eVal;
+            }).catch(function (e) {
+              output.textContent = e;
             });
           });
-        }).then(function (inputValue) {
-          var output = document.createElement("pre");
-          terminal.appendChild(output);
-          return jsh.then(function () {
-            return jsh.value(window.eval(inputValue || "undefined")).asText();
-          }).then(function (eVal) {
-            output.textContent = eVal;
-          }).catch(function (e) {
-            output.textContent = e;
-          });
         });
-      });
+      }());
 
       function dir(obj) {
         var k, s = "";
