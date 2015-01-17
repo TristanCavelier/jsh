@@ -20,6 +20,10 @@
         color: white;
         background-color: black;
       }
+      .disabled {
+        border-color: #303030;
+        color: grey;
+      }
       .output {
       }
     </style>
@@ -46,6 +50,7 @@
                   input.setAttribute("rows", input.value.split("\n").length);
                   if (input.value === "") { return ev.preventDefault(); }
                   input.removeEventListener("keypress", f);
+                  input.setAttribute("class", input.getAttribute("class") + " disabled");
                   input.disabled = true;
                   done(input.value);
                 }
