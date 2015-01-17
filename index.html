@@ -9,9 +9,16 @@
         margin: 0;
         height: 100%;
         width: 100%;
+
+        color: white;
+        background-color: black;
       }
       .prompt {
         width: 100%;
+        border: grey solid 1px;
+
+        color: white;
+        background-color: black;
       }
       .output {
       }
@@ -26,16 +33,22 @@
         return jsh.then(function () {
           var input = document.createElement("textarea");
           input.className = "prompt";
+          input.placeholder = "> Type your command here";
           input.setAttribute("rows", 1);
           setTimeout(function () { input.focus(); });
           terminal.appendChild(input);
           return new Promise(function (done) {
             input.addEventListener("keypress", function f(ev) {
-              if (!ev.shiftKey && (ev.key === "Enter" || ev.keyCode === 10)) {
-                if (input.value === "") { return ev.preventDefault(); }
-                input.removeEventListener("keypress", f);
-                input.disabled = true;
-                done(input.value);
+              if (ev.key === "Enter" || ev.keyCode === 13) {
+                if (ev.shiftKey) {
+                  input.setAttribute("rows", input.value.split("\n").length + 1);
+                } else {
+                  input.setAttribute("rows", input.value.split("\n").length);
+                  if (input.value === "") { return ev.preventDefault(); }
+                  input.removeEventListener("keypress", f);
+                  input.disabled = true;
+                  done(input.value);
+                }
               }
             });
           });
