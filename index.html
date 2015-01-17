@@ -30,7 +30,17 @@
     <script src="jsh.js"></script>
   </head>
   <body>
+    <div id="help" style="display: none;">
+      <div>
+        <p>This terminal is a simple javascript interpreter which shows return values.</p>
+        <p>If the return value is a DOMElement, the interpreter shows it.</p>
+        <p>If the return value is a Promise, the interpreter will show the Promise return value.</p>
+        <p>The `<code>dir(..)</code>` function shows object properties. (see `<code>dir(jsh)</code>`.)</p>
+      </div>
+    </div>
     <script>
+      var help = document.querySelector("#help").querySelector("div");
+
       (function () {
         var terminal = document.createElement("div");
         document.body.appendChild(terminal);
@@ -38,7 +48,7 @@
           return jsh.then(function () {
             var input = document.createElement("textarea");
             input.className = "prompt";
-            input.placeholder = "> Type your command here";
+            input.placeholder = "> Type your command here. Type `help` for more information.";
             input.setAttribute("rows", 1);
             setTimeout(function () { input.focus(); });
             terminal.appendChild(input);
@@ -59,14 +69,19 @@
               });
             });
           }).then(function (inputValue) {
-            var output = document.createElement("pre");
+            var output = document.createElement("div"), pre = document.createElement("pre");
             terminal.appendChild(output);
             return jsh.then(function () {
-              return jsh.value(window.eval(inputValue || "undefined")).asText();
+              return window.eval(inputValue || "undefined");
             }).then(function (eVal) {
-              output.textContent = eVal;
+              if (!(eVal instanceof HTMLElement)) {
+                pre.textContent = eVal;
+                eVal = pre;
+              }
+              output.appendChild(eVal);
             }).catch(function (e) {
-              output.textContent = e;
+              pre.textContent = e;
+              output.appendChild(pre);
             });
           });
         });
