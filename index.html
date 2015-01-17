@@ -32,10 +32,17 @@
   <body>
     <div id="help" style="display: none;">
       <div>
-        <p>This terminal is a simple javascript interpreter which shows return values.</p>
-        <p>If the return value is a DOMElement, the interpreter shows it.</p>
-        <p>If the return value is a Promise, the interpreter will show the Promise return value.</p>
-        <p>The `<code>dir(..)</code>` function shows object properties. (see `<code>dir(jsh)</code>`.)</p>
+        <p>This terminal is a simple <span style="color: magenta">Javascript</span> console.</p>
+        <p>
+          It shows the return value of what you type. It handles special return values like
+          <span style="color: green">HTMLElement</span> and <span style="color: green">Promise</span>.
+        </p>
+        <p>
+          The `<code style="color: blue">dir(..)</code>` function shows object properties,
+          it is useful to know what kind of object you are manipulating.
+          (see `<code style="color: blue">dir(jsh)</code>`.)
+        </p>
+        <p>Use <span style="color: yellow">Ctrl-ArrowUp</span> or <span style="color: yellow">Ctrl-ArrowDown</span> to browse command history</p>
       </div>
     </div>
     <script>
