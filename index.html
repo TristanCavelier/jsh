@@ -42,9 +42,11 @@
       var help = document.querySelector("#help").querySelector("div");
 
       (function () {
-        var terminal = document.createElement("div");
+        var terminal = document.createElement("div"), history = [];
         document.body.appendChild(terminal);
         jsh.loop(function () {
+          var historyIndex = history.length, valueIndex = history.length;
+          history[valueIndex] = "";
           return jsh.then(function () {
             var input = document.createElement("textarea");
             input.className = "prompt";
@@ -54,6 +56,22 @@
             terminal.appendChild(input);
             return new Promise(function (done) {
               input.addEventListener("keypress", function f(ev) {
+                if (ev.ctrlKey) {
+                  if (ev.key === "ArrowUp" || ev.key === "Up") {
+                    if (historyIndex === history.length - 1) {
+                      history[valueIndex] = input.value;
+                    }
+                    if (historyIndex > 0) {
+                      historyIndex -= 1;
+                      input.value = history[historyIndex];
+                    }
+                  } else if (ev.key === "ArrowDown" || ev.key === "Down") {
+                    if (historyIndex < history.length - 1) {
+                      historyIndex += 1;
+                      input.value = history[historyIndex];
+                    }
+                  }
+                }
                 if (ev.key === "Enter" || ev.keyCode === 13) {
                   if (ev.shiftKey) {
                     input.setAttribute("rows", input.value.split("\n").length + 1);
@@ -71,6 +89,7 @@
           }).then(function (inputValue) {
             var output = document.createElement("div"), pre = document.createElement("pre");
             terminal.appendChild(output);
+            history[valueIndex] = inputValue;
             return jsh.then(function () {
               return window.eval(inputValue || "undefined");
             }).then(function (eVal) {
