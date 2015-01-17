@@ -91,7 +91,7 @@
             terminal.appendChild(output);
             history[valueIndex] = inputValue;
             return jsh.then(function () {
-              return window.eval(inputValue || "undefined");
+              return window.eval(inputValue);
             }).then(function (eVal) {
               if (!(eVal instanceof HTMLElement)) {
                 pre.textContent = eVal;
