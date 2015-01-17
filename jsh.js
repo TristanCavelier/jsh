@@ -834,6 +834,13 @@
     return this.asText().split("\n").forEach(callback);
   };
 
+  JSH.prototype.countLines = function () {
+    var count = 0;
+    return this.forEachLine(function () {
+      count += 1;
+    }).then(function () { return count; });
+  };
+
   JSH.prototype.waitAll = function () {
     return this.then(function (array) {
       return CancellablePromise.all(array);
