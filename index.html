@@ -109,7 +109,9 @@
       function dir(obj) {
         var k, s = "";
         for (k in obj) {
-          s += k + ": " + typeof obj[k] + "\n";
+          if (k.slice(0, 1) !== "_") {
+            s += k + ": " + typeof obj[k] + "\n";
+          }
         }
         return s;
       }
