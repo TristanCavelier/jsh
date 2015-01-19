@@ -805,6 +805,7 @@
     var args = [].reduce.call(arguments, function (prev, value) {
       var t = typeof value;
       if (prev[t]) { prev[t].push(value); }
+      return prev;
     }, {"string": [], "object": []});
     if (!args.object[0]) { args.object[0] = {}; }
     return this.then(function (input) {
