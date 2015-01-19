@@ -1118,13 +1118,13 @@
         textarea.style.position = "absolute";
         textarea.placeholder = "Press Ctrl+Enter to validate this textarea, or press Escape to invalidate it.";
         if (text !== undefined) { textarea.value = text; }
-        textarea.addEventListener("keypress", function thisFun(e) {
-          if (e.key === "Esc" || e.key === "Escape") {
-            textarea.removeEventListener("keypress", thisFun);
+        textarea.addEventListener("keydown", function thisFun(e) {
+          if (e.key === "Esc" || e.key === "Escape" || e.keyIdentifier === "U+001B") {
+            textarea.removeEventListener("keydown", thisFun);
             textarea.remove();
             fail(new Error("textarea() exited"));
-          } else if (e.key === "Enter" && e.ctrlKey === true) {
-            textarea.removeEventListener("keypress", thisFun);
+          } else if ((e.key === "Enter" || e.keyIdentifier === "Enter") && e.ctrlKey === true) {
+            textarea.removeEventListener("keydown", thisFun);
             done(textarea.value);
             textarea.remove();
           }

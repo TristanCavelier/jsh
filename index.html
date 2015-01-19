@@ -62,9 +62,9 @@
             setTimeout(function () { input.focus(); });
             terminal.appendChild(input);
             return new Promise(function (done) {
-              input.addEventListener("keypress", function f(ev) {
+              input.addEventListener("keydown", function f(ev) {
                 if (ev.ctrlKey) {
-                  if (ev.key === "ArrowUp" || ev.key === "Up") {
+                  if (ev.key === "ArrowUp" || ev.key === "Up" || ev.keyIdentifier === "Up") {
                     if (historyIndex === history.length - 1) {
                       history[valueIndex] = input.value;
                     }
@@ -72,20 +72,20 @@
                       historyIndex -= 1;
                       input.value = history[historyIndex];
                     }
-                  } else if (ev.key === "ArrowDown" || ev.key === "Down") {
+                  } else if (ev.key === "ArrowDown" || ev.key === "Down" || ev.keyIdentifier === "Down") {
                     if (historyIndex < history.length - 1) {
                       historyIndex += 1;
                       input.value = history[historyIndex];
                     }
                   }
                 }
-                if (ev.key === "Enter" || ev.keyCode === 13) {
+                if (ev.key === "Enter" || ev.keyIdentifier === "Enter") {
                   if (ev.shiftKey) {
                     input.setAttribute("rows", input.value.split("\n").length + 1);
                   } else {
                     input.setAttribute("rows", input.value.split("\n").length);
                     if (input.value === "") { return ev.preventDefault(); }
-                    input.removeEventListener("keypress", f);
+                    input.removeEventListener("keydown", f);
                     input.setAttribute("class", input.getAttribute("class") + " disabled");
                     input.disabled = true;
                     done(input.value);
