@@ -695,15 +695,20 @@
 
   JSH.prototype.sleep = function (ms) {
     return this.then(function (input) {
-      return new Promise(function (done) {
-        setTimeout(done, ms, input);
+      var i, f;
+      return new CancellablePromise(function (done, fail) {
+        f = fail;
+        i = setTimeout(done, ms, input);
+      }, function () {
+        clearTimeout(i);
+        f(new Error("Cancelled"));
       });
     });
   };
 
   JSH.prototype.never = function () {
     return this.then(function () {
-      return new Promise(function () { return; });
+      return new CancellablePromise(function () { return; });
     });
   };
 
@@ -1012,7 +1017,7 @@
         param[inputKey] = input;
       }
       var xhr = new XMLHttpRequest();
-      return new Promise(function (done, fail) {
+      return new CancellablePromise(function (done, fail) {
         var k;
         xhr.open((param.method || "GET").toUpperCase(), param.url || param.uri, true);
         xhr.responseType = param.responseType || "";
@@ -1038,6 +1043,9 @@
         xhr.addEventListener("error", function () {
           return fail(new Error("request: error"));
         }, false);
+        xhr.addEventListener("abort", function () {
+          return fail(new Error("request: aborted"));
+        }, false);
         if (param.xhrFields) {
           for (k in param.xhrFields) {
             if (param.xhrFields.hasOwnProperty(k)) {
@@ -1049,6 +1057,8 @@
           param.beforeSend(xhr);
         }
         xhr.send(param.data);
+      }, function () {
+        xhr.abort();
       });
     });
   };
