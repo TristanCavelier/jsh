@@ -1135,6 +1135,14 @@
     });
   };
 
+  JSH.prototype.textarea = function () {
+    return this.asText().then(function (text) {
+      var t = document.createElement("textarea");
+      t.value = text;
+      return t;
+    });
+  };
+
   JSH.prototype.iframe = function () {
     return this.asDataURL("text/html").then(function (input) {
       var i = document.createElement("iframe");
