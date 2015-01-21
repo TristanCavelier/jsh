@@ -24,7 +24,14 @@
         border-color: #303030;
         color: grey;
       }
-      .output {
+      .output textarea {
+        width: 100%;
+      }
+      .output iframe {
+        width: 100%;
+        height: 95%;
+        background-color: white;
+        border: 0;
       }
     </style>
     <script src="jsh.js"></script>
@@ -95,6 +102,7 @@
             });
           }).then(function (inputValue) {
             var output = document.createElement("div"), pre = document.createElement("pre");
+            output.className = "output";
             terminal.appendChild(output);
             history[valueIndex] = inputValue;
             return jsh.then(function () {
