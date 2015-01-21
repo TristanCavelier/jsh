@@ -1067,15 +1067,22 @@
   function methodURI(method) {
     return function (uri) {
       var it = this;
-      return it.then(function (_uri) {
-        if (uri !== undefined) { _uri = uri; }
+      return it.then(function () {
         var tmp = (/^([a-z]+):/).exec(uri);
         if (tmp) {
-          return it[method +
-                    tmp[1].slice(0, 1).toUpperCase() + tmp[1].slice(1).toLowerCase() +
-                    "URI"](_uri);
+          tmp = method +
+                tmp[1].slice(0, 1).toUpperCase() + tmp[1].slice(1).toLowerCase() +
+                "URI";
+          if (typeof it[tmp] === "function") {
+            return it[tmp](uri);
+          }
         }
-        return it.ajax({"url": _uri, "method": method.toUpperCase(), "responseType": "blob"});
+        // TODO realy use ajax as fallback?
+        return it.ajax({
+          "url": uri,
+          "method": method.toUpperCase(),
+          "responseType": "blob"
+        }, "data");
       });
     };
   }
@@ -1086,15 +1093,11 @@
 
   function methodHttpURI(method) {
     return function (uri) {
-      var it = this;
-      return it.then(function (_uri) {
-        if (uri !== undefined) { _uri = uri; }
-        return it.ajax({
-          "url": _uri,
-          "method": method,
-          "responseType": "blob",
-          "withCredentials": true
-        });
+      return this.ajax({
+        "url": uri,
+        "method": method,
+        "responseType": "blob",
+        "withCredentials": true
       });
     };
   }
