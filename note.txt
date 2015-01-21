@@ -1,0 +1,18 @@
+.taprompt() like prompt but with textarea
+var ta = jsh.textarea(); ta.get("value");
+jsh.textarea(); var ta = LAST; ta.value;
+
+input.markdown() ?
+
+.navigate(url) ? (like iframe but with "previous" "next" "url bar" "quit")
+url.navigate() ?
+.navigate({url: url}) ?
+
+input.md5sum() ?
+input.sha1() ?
+input.sha256() ?
+input.sha512() ?
+
+.jslint() ?
+.jshint() ?
+.uglifyjs() ?
