@@ -1106,19 +1106,16 @@
   JSH.prototype.putHttpsURI = methodHttpURI("PUT");
   JSH.prototype.deleteHttpsURI = methodHttpURI("DELETE");
 
-  JSH.prototype.textarea = function () {
-    // TODO make this method a kind of window with "ok" and "exit" button (may be with a this.window(...) method)
-    // TODO add default value to textarea
-    // TODO make it cancellable
+  JSH.prototype.prompttextarea = function () {
+    // TODO make it act like prompt but with a textarea
+    // TODO replace prompt by this function?
     // TODO add option.placeholder
-    // TODO add option.windowTitle
-    return this.asText().then(function (text) {
+    return this.then(function () {
       var canceller = emptyFunction;
       return new CancellablePromise(function (done, fail) {
         var textarea = document.createElement("textarea");
         textarea.style.position = "absolute";
         textarea.placeholder = "Press Ctrl+Enter to validate this textarea, or press Escape to invalidate it.";
-        if (text !== undefined) { textarea.value = text; }
         textarea.addEventListener("keydown", function thisFun(e) {
           if (e.key === "Esc" || e.key === "Escape" || e.keyIdentifier === "U+001B") {
             textarea.removeEventListener("keydown", thisFun);
