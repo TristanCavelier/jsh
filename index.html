@@ -53,7 +53,11 @@
       </div>
     </div>
     <script>
-      var help = document.querySelector("#help").querySelector("div");
+      var HELP = document.querySelector("#help").querySelector("div");
+      var RET;
+      var ANS;
+
+      var help = HELP;
 
       (function () {
         var terminal = document.createElement("div"), history = [];
@@ -106,8 +110,10 @@
             terminal.appendChild(output);
             history[valueIndex] = inputValue;
             return jsh.then(function () {
-              return window.eval(inputValue);
+              RET = window.eval(inputValue);
+              return RET;
             }).then(function (eVal) {
+              ANS = eVal;
               if (!(eVal instanceof HTMLElement)) {
                 pre.textContent = eVal;
                 eVal = pre;
