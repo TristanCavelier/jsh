@@ -1138,6 +1138,14 @@
     });
   };
 
+  JSH.prototype.iframe = function () {
+    return this.asDataURL("text/html").then(function (input) {
+      var i = document.createElement("iframe");
+      i.src = input;
+      return i;
+    });
+  };
+
   exports.jsh = new JSH();
 
 }((function () {
