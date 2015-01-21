@@ -59,6 +59,9 @@
 
       var help = HELP;
 
+      var tmp = function (e) { alert(e); alert(e.error); };
+      window.addEventListener("error", tmp);
+
       (function () {
         var terminal = document.createElement("div"), history = [];
         document.body.appendChild(terminal);
@@ -136,6 +139,9 @@
         }
         return s;
       }
+
+      // window.removeEventListener("error", tmp);
+      // tmp = undefined;
     </script>
   </body>
 </html>
