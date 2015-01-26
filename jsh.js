@@ -893,14 +893,23 @@
   };
 
   JSH.prototype.forEachLine = function (callback) {
-    return this.asText().split("\n").forEach(callback);
+    return this.asText().split("\n").then(function (array) {
+      if (array[array.length - 1] === "") { array.length -= 1; }
+      return array;
+    }).forEach(callback);
   };
 
   JSH.prototype.countLines = function () {
-    var count = 0;
-    return this.forEachLine(function () {
-      count += 1;
-    }).then(function () { return count; });
+    return this.asText().then(function (input) {
+      if (input === "") { return 0; }
+      var count = 1, i;
+      for (i = 0; i < input.length; i += 1) {
+        if (input[i] === "\n" && input[i + 1] !== undefined) {
+          count += 1;
+        }
+      }
+      return count;
+    });
   };
 
   JSH.prototype.waitAll = function () {
