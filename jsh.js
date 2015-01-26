@@ -1184,6 +1184,26 @@
   JSH.prototype.putHttpsURI = methodHttpURI("PUT");
   JSH.prototype.deleteHttpsURI = methodHttpURI("DELETE");
 
+  JSH.prototype.getLocalstorageURI = function (uri) {
+    return this.then(function () {
+      var v = localStorage(uri.replace(/^localstorage:/, ""));
+      if (v === null) {
+        throw objectUpdate(new Error("localStorage: Not Found"), {"status": 404});
+      }
+      return v;
+    });
+  };
+  JSH.prototype.putLocalstorageURI = function (uri) {
+    return this.asText().then(function (input) {
+      localStorage.setItem(uri.replace(/^localstorage:/, ""), input);
+    });
+  };
+  JSH.prototype.deleteLocalstorageURI = function (uri) {
+    return this.then(function () {
+      localStorage.removeItem(uri.replace(/^localstorage:/, ""));
+    });
+  };
+
   JSH.prototype.prompttextarea = function () {
     // TODO make it act like prompt but with a textarea
     // TODO replace prompt by this function?
