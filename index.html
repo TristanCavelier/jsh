@@ -78,7 +78,11 @@
             setTimeout(function () { input.focus(); });
             terminal.appendChild(input);
             return new Promise(function (done) {
+              function updatePrompt() {
+                input.setAttribute("rows", input.value.split("\n").length || 1);
+              }
               input.addEventListener("keydown", function f(ev) {
+                setTimeout(updatePrompt);
                 if (ev.ctrlKey) {
                   if (ev.key === "ArrowUp" || ev.key === "Up" || ev.keyIdentifier === "Up") {
                     if (historyIndex === history.length - 1) {
@@ -96,10 +100,7 @@
                   }
                 }
                 if (ev.key === "Enter" || ev.keyIdentifier === "Enter") {
-                  if (ev.shiftKey) {
-                    input.setAttribute("rows", input.value.split("\n").length + 1);
-                  } else {
-                    input.setAttribute("rows", input.value.split("\n").length);
+                  if (!ev.shiftKey) {
                     if (input.value === "") { return ev.preventDefault(); }
                     input.removeEventListener("keydown", f);
                     input.setAttribute("class", input.getAttribute("class") + " disabled");
