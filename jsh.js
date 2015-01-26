@@ -1241,6 +1241,14 @@
     });
   };
 
+  JSH.prototype.img = function (mime) {
+    return this.asDataURL(mime && mime.contentType || mime || "").then(function (input) {
+      var i = document.createElement("img");
+      i.src = input;
+      return i;
+    });
+  };
+
   JSH.prototype.iframe = function () {
     return this.asDataURL("text/html").then(function (input) {
       var i = document.createElement("iframe");
