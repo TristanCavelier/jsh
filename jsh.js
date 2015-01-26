@@ -1100,10 +1100,10 @@
           }
         }
         xhr.addEventListener("load", function (e) {
-          if (e.target.status >= 400) {
-            return fail(new Error("request: " + (e.target.statusText || "unknown error")));
+          if (e.target.status < 400) {
+            return done(e.target.response);
           }
-          return done(e.target.response);
+          return fail(objectUpdate(new Error("request: " + (e.target.statusText || "unknown error")), {"status": e.target.status}));
         }, false);
         xhr.addEventListener("error", function () {
           return fail(new Error("request: error"));
