@@ -842,6 +842,21 @@
     });
   };
 
+  JSH.prototype.map = function (callback) {
+    var newArray = [];
+    return this.then(function (array) {
+      if (array.length === 0) { return newArray; }
+      var i = 0;
+      return promiseBasedWhile(function () {
+        return toThenable(callback(array[i], i, array)).then(function (value) {
+          newArray[i] = value;
+          i += 1;
+          return i < array.length;
+        });
+      }).then(function () { return newArray; });
+    });
+  };
+
   JSH.prototype.forEachLine = function (callback) {
     return this.asText().split("\n").forEach(callback);
   };
