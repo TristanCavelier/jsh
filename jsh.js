@@ -794,6 +794,12 @@
     });
   };
 
+  JSH.prototype.slice = function (a, b, c) {
+    return this.then(function (input) {
+      return input.slice(a, b, c);
+    });
+  };
+
   JSH.prototype.join = function (separator) {
     return this.then(function (input) {
       return input.join(separator);
