@@ -13,7 +13,7 @@
         color: white;
         background-color: black;
       }
-      .prompt {
+      .prompt, .prompt-button {
         width: 100%;
         border: grey solid 1px;
 
@@ -77,6 +77,10 @@
             input.setAttribute("rows", 1);
             setTimeout(function () { input.focus(); });
             terminal.appendChild(input);
+            var validate = document.createElement("button");
+            validate.textContent = "Execute";
+            validate.className = "prompt-button";
+            terminal.appendChild(validate);
             return new Promise(function (done) {
               function historyUp() {
                 if (historyIndex === history.length - 1) {
@@ -101,6 +105,8 @@
                 input.removeEventListener("keydown", onKeyDown);
                 input.setAttribute("class", input.getAttribute("class") + " disabled");
                 input.disabled = true;
+                validate.removeEventListener("click", submit);
+                validate.remove();
                 done(input.value);
               }
               function onKeyDown(ev) {
@@ -119,6 +125,7 @@
                   }
                 }
               }
+              validate.addEventListener("click", submit);
               input.addEventListener("keydown", onKeyDown);
             });
           }).then(function (inputValue) {
