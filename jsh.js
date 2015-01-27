@@ -1186,7 +1186,7 @@
 
   JSH.prototype.getLocalstorageURI = function (uri) {
     return this.then(function () {
-      var v = localStorage(uri.replace(/^localstorage:/, ""));
+      var v = localStorage.getItem(uri.replace(/^localstorage:/, ""));
       if (v === null) {
         throw objectUpdate(new Error("localStorage: Not Found"), {"status": 404});
       }
