@@ -78,37 +78,48 @@
             setTimeout(function () { input.focus(); });
             terminal.appendChild(input);
             return new Promise(function (done) {
+              function historyUp() {
+                if (historyIndex === history.length - 1) {
+                  history[valueIndex] = input.value;
+                }
+                if (historyIndex > 0) {
+                  historyIndex -= 1;
+                  input.value = history[historyIndex];
+                }
+              }
+              function historyDown() {
+                if (historyIndex < history.length - 1) {
+                  historyIndex += 1;
+                  input.value = history[historyIndex];
+                }
+              }
               function updatePrompt() {
                 input.setAttribute("rows", input.value.split("\n").length || 1);
               }
-              input.addEventListener("keydown", function f(ev) {
+              function submit() {
+                if (input.value === "") { return; }
+                input.removeEventListener("keydown", onKeyDown);
+                input.setAttribute("class", input.getAttribute("class") + " disabled");
+                input.disabled = true;
+                done(input.value);
+              }
+              function onKeyDown(ev) {
                 setTimeout(updatePrompt);
                 if (ev.ctrlKey) {
                   if (ev.key === "ArrowUp" || ev.key === "Up" || ev.keyIdentifier === "Up") {
-                    if (historyIndex === history.length - 1) {
-                      history[valueIndex] = input.value;
-                    }
-                    if (historyIndex > 0) {
-                      historyIndex -= 1;
-                      input.value = history[historyIndex];
-                    }
+                    historyUp();
                   } else if (ev.key === "ArrowDown" || ev.key === "Down" || ev.keyIdentifier === "Down") {
-                    if (historyIndex < history.length - 1) {
-                      historyIndex += 1;
-                      input.value = history[historyIndex];
-                    }
+                    historyDown();
                   }
                 }
                 if (ev.key === "Enter" || ev.keyIdentifier === "Enter") {
                   if (!ev.shiftKey) {
-                    if (input.value === "") { return ev.preventDefault(); }
-                    input.removeEventListener("keydown", f);
-                    input.setAttribute("class", input.getAttribute("class") + " disabled");
-                    input.disabled = true;
-                    done(input.value);
+                    ev.preventDefault();
+                    submit();
                   }
                 }
-              });
+              }
+              input.addEventListener("keydown", onKeyDown);
             });
           }).then(function (inputValue) {
             var output = document.createElement("div"), pre = document.createElement("pre");
