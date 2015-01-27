@@ -61,6 +61,7 @@
       var HELP = document.querySelector("#help").querySelector("div");
       var RET;
       var ANS;
+      var ERR;
 
       var help = HELP;
 
@@ -144,6 +145,7 @@
               }
               output.appendChild(eVal);
             }).catch(function (e) {
+              ERR = e;
               pre.textContent = e;
               output.appendChild(pre);
             });
