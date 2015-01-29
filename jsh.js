@@ -1051,35 +1051,45 @@
     });
   };
 
-  /**
-   * Send request with XHR and return a promise. xhr.onload: The promise is
-   * resolved when the status code is lower than 400 with the xhr object as first
-   * parameter. xhr.onerror: reject with xhr object as first
-   * parameter. xhr.onprogress: notifies the xhr object.
-   *
-   * @param  {Object} param The parameters
-   * @param  {String} param.url The url
-   * @param  {String} [param.method="GET"] The request method
-   * @param  {String} [param.responseType=""] The data type to retrieve
-   * @param  {String} [param.overrideMimeType] The mime type to override
-   * @param  {Object} [param.headers] The headers to send
-   * @param  {Any} [param.data] The data to send
-   * @param  {Boolean} [param.withCredentials] Tell the browser to use credentials
-   * @param  {Object} [param.xhrFields] The other xhr fields to fill
-   * @param  {Function} [param.beforeSend] A function called just before the send
-   *   request. The first parameter of this function is the XHR object.
-   * @return {Promise} The promise
-   */
   JSH.prototype.ajax = function (param, inputKey) {
+    /**
+     * Send request with XHR and return a promise. xhr.onload: The promise is
+     * resolved when the status code is lower than 400 with the xhr object as
+     * first parameter. xhr.onerror: reject with xhr object as first parameter.
+     * xhr.onprogress: notifies the xhr object.
+     *
+     * @param  {Object} param The parameters
+     * @param  {String} param.url The url
+     * @param  {String} [param.method="GET"] The request method
+     * @param  {String} [param.responseType=""] The data type to retrieve
+     * @param  {String} [param.overrideMimeType] The mime type to override
+     * @param  {Object} [param.headers] The headers to send
+     * @param  {Any} [param.data] The data to send
+     * @param  {Boolean} [param.withCredentials] Tell the browser to use
+     *   credentials
+     * @param  {Object} [param.xhrFields] The other xhr fields to fill
+     * @param  {Boolean} [param.getEvent] Tell the method to return the
+     *   response event.
+     * @param  {Function} [param.beforeSend] A function called just before the
+     *   send request. The first parameter of this function is the XHR object.
+     * @param  {String} [param.inputKey="data"|"url"] The key to set thank to
+     *   the input.
+     * @param  {String} [inputKey] The key to set thank to the input, higher
+     *   priority than param.inputKey.
+     * @return {JSH} A new JSH promise.
+     */
     return this.then(function (input) {
-      if (inputKey === undefined) {
+      if (inputKey !== undefined) {
+        param.inputKey = inputKey;
+      }
+      if (param.inputKey === undefined) {
         if (param.data === undefined) {
           param.data = input; // can be disable if param.data = null
         } else if (param.url === undefined && typeof input === "string") {
           param.url = input;
         }
       } else {
-        param[inputKey] = input;
+        param[param.inputKey] = input;
       }
       var xhr = new XMLHttpRequest();
       return new CancellablePromise(function (done, fail) {
@@ -1100,15 +1110,18 @@
           }
         }
         xhr.addEventListener("load", function (e) {
+          if (param.getEvent) { return done(e); }
           if (e.target.status < 400) {
             return done(e.target.response);
           }
           return fail(objectUpdate(new Error("request: " + (e.target.statusText || "unknown error")), {"status": e.target.status}));
         }, false);
-        xhr.addEventListener("error", function () {
+        xhr.addEventListener("error", function (e) {
+          if (param.getEvent) { return done(e); }
           return fail(new Error("request: error"));
         }, false);
-        xhr.addEventListener("abort", function () {
+        xhr.addEventListener("abort", function (e) {
+          if (param.getEvent) { return done(e); }
           return fail(new Error("request: aborted"));
         }, false);
         if (param.xhrFields) {
