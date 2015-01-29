@@ -1196,6 +1196,9 @@
   JSH.prototype.getHttpsURI = methodHttpURI("GET");
   JSH.prototype.putHttpsURI = methodHttpURI("PUT");
   JSH.prototype.deleteHttpsURI = methodHttpURI("DELETE");
+  JSH.prototype.getDataURI = methodHttpURI("GET");
+  JSH.prototype.putDataURI = methodHttpURI("PUT");
+  JSH.prototype.deleteDataURI = methodHttpURI("DELETE");
 
   JSH.prototype.getLocalstorageURI = function (uri) {
     return this.then(function () {
