@@ -62,15 +62,16 @@
       var RET;
       var ANS;
       var ERR;
+      var HIST = [];
 
       var help = HELP;
 
       (function () {
-        var terminal = document.createElement("div"), history = [];
+        var terminal = document.createElement("div");
         document.body.appendChild(terminal);
         jsh.loop(function () {
-          var historyIndex = history.length, valueIndex = history.length;
-          history[valueIndex] = "";
+          var historyIndex = HIST.length, valueIndex = HIST.length;
+          HIST[valueIndex] = "";
           return jsh.then(function () {
             var input = document.createElement("textarea");
             input.className = "prompt";
@@ -84,18 +85,18 @@
             terminal.appendChild(validate);
             return new Promise(function (done) {
               function historyUp() {
-                if (historyIndex === history.length - 1) {
-                  history[valueIndex] = input.value;
+                if (historyIndex === HIST.length - 1) {
+                  HIST[valueIndex] = input.value;
                 }
                 if (historyIndex > 0) {
                   historyIndex -= 1;
-                  input.value = history[historyIndex];
+                  input.value = HIST[historyIndex];
                 }
               }
               function historyDown() {
-                if (historyIndex < history.length - 1) {
+                if (historyIndex < HIST.length - 1) {
                   historyIndex += 1;
-                  input.value = history[historyIndex];
+                  input.value = HIST[historyIndex];
                 }
               }
               function updatePrompt() {
@@ -133,7 +134,7 @@
             var output = document.createElement("div"), pre = document.createElement("pre");
             output.className = "output";
             terminal.appendChild(output);
-            history[valueIndex] = inputValue;
+            HIST[valueIndex] = inputValue;
             return jsh.then(function () {
               RET = window.eval(inputValue);
               return RET;
