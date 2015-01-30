@@ -1191,17 +1191,6 @@
     });
   };
 
-  function methodWebdavURI(method, replace1, replace2) {
-    return function (uri) {
-      return this.then(function (_uri) {
-        if (uri === undefined) { _uri = uri; }
-        _uri = asString(_uri).replace(replace1, replace2);
-        if (param.withCredentials === undefined) { param.withCredentials = true; }
-        return input;
-      }).ajax(param, inputKey);
-    };
-  }
-
   function methodURI(method) {
     return function (uri) {
       var it = this;
@@ -1250,8 +1239,6 @@
   JSH.prototype.putHttpsURI = methodHttpURI("PUT");
   JSH.prototype.deleteHttpsURI = methodHttpURI("DELETE");
   JSH.prototype.getDataURI = methodHttpURI("GET");
-  JSH.prototype.putDataURI = methodHttpURI("PUT");
-  JSH.prototype.deleteDataURI = methodHttpURI("DELETE");
   JSH.prototype.getFileURI = methodHttpURI("GET");
 
   JSH.prototype.getLocalstorageURI = function (uri) {
