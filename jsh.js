@@ -389,16 +389,16 @@
     return o1;
   }
 
-  /**
-   * Allows the user to download `data` as a file which name is defined by
-   * `filename`. The `mimetype` will help the browser to choose the associated
-   * application to open with.
-   *
-   * @param  {String} filename The file name.
-   * @param  {String} mimetype The data type.
-   * @param  {Any} data The data to download.
-   */
   function saveAs(filename, mimetype, data) {
+    /**
+     * Allows the user to download `data` as a file which name is defined by
+     * `filename`. The `mimetype` will help the browser to choose the associated
+     * application to open with.
+     *
+     * @param  {String} filename The file name.
+     * @param  {String} mimetype The data type.
+     * @param  {Any} data The data to download.
+     */
     data = window.URL.createObjectURL(new Blob([data], {"type": mimetype}));
     var a = document.createElement("a");
     if (a.download !== undefined) {
@@ -835,6 +835,19 @@
   };
 
   JSH.prototype.downloadAs = function () {
+    /**
+     *     jsh.value(input).downloadAs("myFile", "text/plain");
+     *     jsh.value(input).downloadAs({"filename": "myFile", "mimetype": "text/plain"});
+     *     jsh.value(input).downloadAs({"filename": "myFile"}, "text/plain");
+     *
+     * Allows the user to download `input` as a file which name is defined by
+     * `filename`. The `mimetype` will help the browser to choose the associated
+     * application to open with.
+     *
+     * @param  {String} filename The file name.
+     * @param  {String} mimetype The data type.
+     * @return {JSH} The input in JSH promise.
+     */
     var args = [].reduce.call(arguments, function (prev, value) {
       var t = typeof value;
       if (prev[t]) { prev[t].push(value); }
@@ -1101,10 +1114,14 @@
 
   JSH.prototype.ajax = function (param) {
     /**
+     *    jsh.ajax({url: location, responseType: "text"}).get("data");
+     *    jsh.ajax({url: location}).get("Content-Length");
+     *    jsh.value(input).ajax({url: there, method: "put"})
+     *
      * Send request with XHR and return a promise. xhr.onload: The promise is
-     * resolved when the status code is lower than 400 with the xhr object as
-     * first parameter. xhr.onerror: reject with xhr object as first parameter.
-     * xhr.onprogress: notifies the xhr object.
+     * resolved when the status code is lower than 400 with a forged response
+     * object as resolved value. xhr.onerror: reject with an Error (with status
+     * code in status property) as rejected value.
      *
      * @param  {Object} param The parameters
      * @param  {String} param.url The url
@@ -1122,7 +1139,8 @@
      *   send request. The first parameter of this function is the XHR object.
      * @param  {String} [param.inputKey="data"|"url"] The key to set thank to
      *   the input.
-     * @return {JSH} A new JSH promise.
+     * @return {JSH<Object>} Response object is like { data: .., header1: ..,
+     *   header2: .., ... }
      */
     return this.then(function (input) {
       if (param.inputKey === undefined) {
