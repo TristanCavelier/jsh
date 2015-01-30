@@ -714,20 +714,17 @@
 
   JSH.prototype.sleep = function (ms) {
     return this.then(function (input) {
-      var i, f;
-      return new CancellablePromise(function (done, fail) {
-        f = fail;
-        i = setTimeout(done, ms, input);
-      }, function () {
-        clearTimeout(i);
-        f(new Error("Cancelled"));
-      });
+      var d = defer(), i = setTimeout(d.resolve, ms, input);
+      d.oncancel = function () { d.fail(new Error("Cancelled")); };
+      return d.promise;
     });
   };
 
   JSH.prototype.never = function () {
     return this.then(function () {
-      return new CancellablePromise(function () { return; });
+      var d = defer();
+      d.oncancel = function () { d.fail(new Error("Cancelled")); };
+      return d.promise;
     });
   };
 
