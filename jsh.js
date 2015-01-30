@@ -1099,7 +1099,7 @@
     return result;
   }
 
-  JSH.prototype.ajax = function (param, inputKey) {
+  JSH.prototype.ajax = function (param) {
     /**
      * Send request with XHR and return a promise. xhr.onload: The promise is
      * resolved when the status code is lower than 400 with the xhr object as
@@ -1122,14 +1122,9 @@
      *   send request. The first parameter of this function is the XHR object.
      * @param  {String} [param.inputKey="data"|"url"] The key to set thank to
      *   the input.
-     * @param  {String} [inputKey] The key to set thank to the input, higher
-     *   priority than param.inputKey.
      * @return {JSH} A new JSH promise.
      */
     return this.then(function (input) {
-      if (inputKey !== undefined) {
-        param.inputKey = inputKey;
-      }
       if (param.inputKey === undefined) {
         if (param.data === undefined) {
           param.data = input; // can be disable if param.data = null
