@@ -267,6 +267,17 @@
     });
   };
 
+  CancellablePromise.defer = function () {
+    var d = {};
+    d.promise = new CancellablePromise(function (done, fail) {
+      d.resolve = done;
+      d.reject = fail;
+    }, function () {
+      d.oncancel();
+    });
+    return d;
+  };
+
   exports.CancellablePromise = CancellablePromise;
 
 
@@ -279,8 +290,7 @@
       /*jslint unparam: true */
       r(v);
     });
-  }, resolved = resolve(), seq = CancellablePromise.sequence;
-
+  }, resolved = resolve(), seq = CancellablePromise.sequence, defer = CancellablePromise.defer;
 
   function JSH(promise, onDone, onFail, previous) {
     var it = this;
