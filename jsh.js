@@ -1260,7 +1260,7 @@
       if (v === null) {
         throw objectUpdate(new Error("localStorage: Not Found"), {"status": 404});
       }
-      return v;
+      return new Blob([v]);
     });
   };
   JSH.prototype.putLocalstorageURI = function (uri) {
