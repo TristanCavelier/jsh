@@ -1051,6 +1051,47 @@
     });
   };
 
+  function headersAsKeyValue(sHeaders) {
+    // Server:   SimpleHTTP/0.6 Python/3.4.1\r\n
+    // Date: Wed, 04 Jun 2014 14:06:57 GMT   \r\n
+    // Value: hello\r\n     guys  \r\n
+    // Content-Type: application/x-silverlight\r\n
+    // Content-Length: 11240\r\n
+    // Last-Modified: Mon, 03 Dec 2012 23:51:07 GMT\r\n
+    // X-Cache: HIT via me\r\n
+    // X-Cache: HIT via other\r\n
+
+    // { "Server": "SimpleHTTP/0.6 Python/3.4.1",
+    //   "Date": "Wed, 04 Jun 2014 14:06:57 GMT",
+    //   "Value": "hello guys",
+    //   "Content-Type": "application/x-silverlight",
+    //   "Content-Length": "11240",
+    //   "Last-Modified": "Mon, 03 Dec 2012 23:51:07 GMT",
+    //   "X-Cache": "HIT via me, HIT via other" }
+
+    /*jslint regexp: true */
+    var result = {}, key, value = "";
+    sHeaders.split("\r\n").forEach(function (line) {
+      if (line[0] === " " || line[0] === "\t") {
+        value += " " + line.replace(/^\s*/, "").replace(/\s*$/, "");
+      } else {
+        if (key) {
+          if (result[key]) {
+            result[key] += ", " + value;
+          } else {
+            result[key] = value;
+          }
+        }
+        key = /^([^:]+)\s*:\s*(.*)$/.exec(line);
+        if (key) {
+          value = key[2].replace(/\s*$/, "");
+          key = key[1];
+        }
+      }
+    });
+    return result;
+  }
+
   JSH.prototype.ajax = function (param, inputKey) {
     /**
      * Send request with XHR and return a promise. xhr.onload: The promise is
@@ -1112,7 +1153,9 @@
         xhr.addEventListener("load", function (e) {
           if (param.getEvent) { return done(e); }
           if (e.target.status < 400) {
-            return done(e.target.response);
+            var r = headersAsKeyValue(e.target.getAllResponseHeaders());
+            r.data = e.target.response;
+            return done(r);
           }
           return fail(objectUpdate(new Error("request: " + (e.target.statusText || "unknown error")), {"status": e.target.status}));
         }, false);
@@ -1156,7 +1199,8 @@
     return function (uri) {
       var it = this;
       return it.then(function () {
-        var tmp = (/^([a-z]+):/).exec(uri);
+        var _uri = uri && uri.uri || uri;
+        var tmp = (/^([a-z]+):/).exec(_uri);
         if (tmp) {
           tmp = method +
                 tmp[1].slice(0, 1).toUpperCase() + tmp[1].slice(1).toLowerCase() +
@@ -1164,13 +1208,9 @@
           if (typeof it[tmp] === "function") {
             return it[tmp](uri);
           }
+          throw new Error("No method " + tmp + " found");
         }
-        // TODO realy use ajax as fallback?
-        return it.ajax({
-          "url": uri,
-          "method": method.toUpperCase(),
-          "responseType": "blob"
-        }, "data");
+        throw new Error("Cannot find URI method");
       });
     };
   }
@@ -1181,11 +1221,17 @@
 
   function methodHttpURI(method) {
     return function (uri) {
-      return this.ajax({
-        "url": uri,
+      var obj = {
         "method": method,
         "responseType": "blob",
         "withCredentials": true
+      }, verbose;
+      return this.then(function () {
+        obj.uri = uri && uri.uri || uri;
+        if (uri && uri.verbose || false) { verbose = true }
+      }).ajax(obj).then(function (e) {
+        if (verbose) { return e; }
+        return e.data;
       });
     };
   }
