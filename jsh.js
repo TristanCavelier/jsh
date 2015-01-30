@@ -624,7 +624,7 @@
     });
   };
 
-  JSH.prototype.asBlob = function () {
+  JSH.prototype.toBlob = function () {
     // TODO if input === undefined, return undefined too ?
     return this.then(function (input) {
       if (input instanceof ArrayBuffer || input.buffer instanceof ArrayBuffer) {
@@ -640,7 +640,7 @@
     });
   };
 
-  JSH.prototype.asText = function () {
+  JSH.prototype.toText = function () {
     // TODO if input === undefined, return undefined too ?
     return this.then(function (input) {
       if (input === undefined || input === null) {
@@ -659,7 +659,7 @@
     });
   };
 
-  JSH.prototype.asArrayBuffer = function () {
+  JSH.prototype.toArrayBuffer = function () {
     // TODO if input === undefined, return undefined too ?
     return this.then(function (input) {
       if (input instanceof Blob) {
@@ -681,7 +681,7 @@
     });
   };
 
-  JSH.prototype.asBinaryString = function () {
+  JSH.prototype.toBinaryString = function () {
     // TODO if input === undefined, return undefined too ?
     return this.then(function (input) {
       if (input === undefined || input === null) {
@@ -704,7 +704,7 @@
     });
   };
 
-  JSH.prototype.asDataURL = function (contentType) {
+  JSH.prototype.toDataURL = function (contentType) {
     // TODO check contentType with regex?
     // TODO remove /;base64(;|$)/ from contentType?
     return this.base64().then(function (input) {
@@ -900,14 +900,14 @@
   };
 
   JSH.prototype.forEachLine = function (callback) {
-    return this.asText().split("\n").then(function (array) {
+    return this.toText().split("\n").then(function (array) {
       if (array[array.length - 1] === "") { array.length -= 1; }
       return array;
     }).forEach(callback);
   };
 
   JSH.prototype.countLines = function () {
-    return this.asText().then(function (input) {
+    return this.toText().then(function (input) {
       if (input === "") { return 0; }
       var count = 1, i;
       for (i = 0; i < input.length; i += 1) {
@@ -1044,9 +1044,9 @@
   JSH.prototype.wrapLines = function (wrap) {
     // TODO make it cancellable
     if (!(wrap > 0)) {
-      return this.asText();
+      return this.toText();
     }
-    return this.asText().then(function (text) {
+    return this.toText().then(function (text) {
       var lines = [];
       text.split("\n").forEach(function (line) {
         while (line) {
@@ -1264,7 +1264,7 @@
     });
   };
   JSH.prototype.putLocalstorageURI = function (uri) {
-    return this.asText().then(function (input) {
+    return this.toText().then(function (input) {
       localStorage.setItem(uri.replace(/^localstorage:/, ""), input);
     });
   };
@@ -1304,7 +1304,7 @@
   };
 
   JSH.prototype.textarea = function () {
-    return this.asText().then(function (text) {
+    return this.toText().then(function (text) {
       var t = document.createElement("textarea");
       t.value = text;
       return t;
@@ -1312,7 +1312,7 @@
   };
 
   JSH.prototype.img = function (mime) {
-    return this.asDataURL(mime && mime.contentType || mime || "").then(function (input) {
+    return this.toDataURL(mime && mime.contentType || mime || "").then(function (input) {
       var i = document.createElement("img");
       i.src = input;
       return i;
@@ -1320,7 +1320,7 @@
   };
 
   JSH.prototype.iframe = function () {
-    return this.asDataURL("text/html").then(function (input) {
+    return this.toDataURL("text/html").then(function (input) {
       var i = document.createElement("iframe");
       i.src = input;
       return i;
