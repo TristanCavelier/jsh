@@ -1245,6 +1245,7 @@
   JSH.prototype.getDataURI = methodHttpURI("GET");
   JSH.prototype.putDataURI = methodHttpURI("PUT");
   JSH.prototype.deleteDataURI = methodHttpURI("DELETE");
+  JSH.prototype.getFileURI = methodHttpURI("GET");
 
   JSH.prototype.getLocalstorageURI = function (uri) {
     return this.then(function () {
