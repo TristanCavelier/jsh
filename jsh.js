@@ -304,6 +304,7 @@
     }
     function _onDone(v) {
       delete it._cf;
+      delete it._previous;
       if (it._cancelled) { return; }
       if (typeof onDone !== "function") {
         return v;
@@ -318,6 +319,7 @@
     }
     function _onFail(v) {
       delete it._cf;
+      delete it._previous;
       if (it._cancelled) { return; }
       if (typeof onFail !== "function") {
         return reject(v);
