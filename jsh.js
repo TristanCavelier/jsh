@@ -1028,15 +1028,16 @@
   JSH.prototype.base64 = basicEncoder(btoa);
   JSH.prototype.unbase64 = basicDecoder(atob);
 
-  function htoa(binaryString) {
+  function btoh(binaryString) {
     var r = "", i;
     for (i = 0; i < binaryString.length; i += 1) {
       r += ("0" + binaryString.charCodeAt(i).toString(16)).slice(-2);
     }
     return r;
   }
+  exports.btoh = btoh;
 
-  function atoh(text) {
+  function htob(text) {
     var r = "", i, c;
     text = text.replace(/\s/g, "");
     if (text.length % 2) {
@@ -1045,16 +1046,19 @@
     for (i = 0; i < text.length; i += 2) {
       c = (parseInt(text[i], 16) * 0x10) + parseInt(text[i + 1], 16);
       if (isNaN(c)) {
-        btoa("="); // throws InvalidCharacterError
-        throw objectUpdate(new Error("String contains an invalid character"), {"name": "InvalidCharacterError", "code": 5});
+        c = new Error("String contains an invalid character");
+        c.name = "InvalidCharacterError";
+        c.code = 5;
+        throw c;
       }
       r += String.fromCharCode(c);
     }
     return r;
   }
+  exports.htob = htob;
 
-  JSH.prototype.hex = basicEncoder(htoa);
-  JSH.prototype.unhex = basicDecoder(atoh);
+  JSH.prototype.hex = basicEncoder(btoh);
+  JSH.prototype.unhex = basicDecoder(htob);
 
   JSH.prototype.wrapLines = function (wrap) {
     // TODO make it cancellable
