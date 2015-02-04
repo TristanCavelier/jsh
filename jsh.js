@@ -9,7 +9,7 @@
       the COPYING file for more details. */
 
   /*jslint nomen: true */
-  /*global console, setTimeout, prompt, alert, btoa, atob,
+  /*global console, setTimeout, clearTimeout, prompt, alert, btoa, atob,
            Blob, ArrayBuffer, XMLHttpRequest, FileReader, Uint8Array */
 
   function CancellablePromise(executor, canceller) {
@@ -657,7 +657,10 @@
   JSH.prototype.sleep = function (ms) {
     return this.then(function (input) {
       var d = defer(), i = setTimeout(d.resolve, ms, input);
-      d.oncancel = function () { d.fail(new Error("Cancelled")); };
+      d.oncancel = function () {
+        clearTimeout(i);
+        d.fail(new Error("Cancelled"));
+      };
       return d.promise;
     });
   };
