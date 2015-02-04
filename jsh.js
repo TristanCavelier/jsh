@@ -1003,6 +1003,28 @@
     }, callback);
   };
 
+  JSH.prototype.ifelse = function (tester, onOk, onKo) {
+    var input;
+    return this.then(function (_input) {
+      input = _input;
+      return tester();
+    }).then(function (result) {
+      if (result) {
+        if (typeof onOk === "function") {
+          return onOk(input);
+        }
+      } else {
+        if (typeof onKo === "function") {
+          return onKo(input);
+        }
+      }
+    });
+  };
+
+  JSH.prototype.if = function (tester, callback) {
+    return jsh.ifelse(tester, callback);
+  };
+
   function basicEncoder(encoder) {
     return function (value) {
       var it = this;
