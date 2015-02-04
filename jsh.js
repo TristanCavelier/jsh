@@ -852,6 +852,28 @@
     });
   };
 
+  JSH.prototype.reduce = function (callback, prev) {
+    var args = arguments;
+    return this.then(function (array) {
+      if (array.length === 0) { return; }
+      var i = 0;
+      if (args.length < 2) {
+        i += 1;
+        prev = array[0];
+        if (array.length === 1) { return; }
+      }
+      function wrappedCallback() { return callback(prev, array[i], i, array); }
+      function afterCallback(v) {
+        prev = v;
+        i += 1;
+        return i < array.length;
+      }
+      return jsh.while(function () {
+        return jsh.then(wrappedCallback).then(afterCallback);
+      }).then(function () { return prev; });
+    });
+  };
+
   JSH.prototype.map = function (callback) {
     var newArray = [];
     return this.then(function (array) {
