@@ -581,10 +581,16 @@
     });
   };
 
-  JSH.prototype.call = function (fun) {
-    var args = [].slice.call(arguments, 1);
-    return this.then(function (thisArg) {
-      return fun.apply(thisArg, args);
+  JSH.prototype.call = function (thisArg, fn) {
+    var args = [].slice.call(arguments, 2);
+    return this.then(function (input) {
+      return fn.apply(thisArg, args.concat([input]));
+    });
+  };
+
+  JSH.prototype.apply = function (thisArg, fn, args) {
+    return this.then(function (input) {
+      return fn.apply(thisArg, [].concat(args, [input]));
     });
   };
 
