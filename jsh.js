@@ -415,15 +415,6 @@
     }
   }
 
-  function toSlices(value, size) {
-    var l = value.length || value.size || 0, slices = [], i;
-    for (i = size; i < l; i += size) {
-      slices.push(value.slice(i - size, i));
-    }
-    if (i >= l) { slices.push(value.slice(i - size, l)); }
-    return slices;
-  }
-
   function range() {
     var args = [].reduce.call(arguments, function (prev, value) {
       var t = typeof value;
@@ -843,8 +834,13 @@
   };
 
   JSH.prototype.toSlices = function (size) {
-    return this.then(function (input) {
-      return toSlices(input, size);
+    return this.then(function (value) {
+      var l = value.length || value.size || 0, slices = [], i;
+      for (i = size; i < l; i += size) {
+        slices.push(value.slice(i - size, i));
+      }
+      if (i >= l) { slices.push(value.slice(i - size, l)); }
+      return slices;
     });
   };
 
