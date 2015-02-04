@@ -830,6 +830,12 @@
     });
   };
 
+  JSH.prototype.sort = function (compareFn) {
+    return this.then(function (input) {
+      return input.sort(compareFn);
+    });
+  };
+
   JSH.prototype.replace = function (pattern, by) {
     return this.then(function (input) {
       return input.replace(pattern, by);
