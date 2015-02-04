@@ -643,29 +643,6 @@
     });
   };
 
-  JSH.prototype.toBinaryString = function () {
-    // TODO if input === undefined, return undefined too ?
-    return this.then(function (input) {
-      if (input === undefined || input === null) {
-        return "";
-      }
-      if (typeof input === "string") {
-        // assuming this is already a binary string
-        return input;
-      }
-      if (input instanceof Blob) {
-        return readBlobAsBinaryString(input);
-      }
-      if (input instanceof ArrayBuffer) {
-        return arrayBufferToBinaryString(input);
-      }
-      if (input && input.buffer instanceof ArrayBuffer) {
-        return arrayBufferToBinaryString(input.buffer);
-      }
-      return readBlobAsBinaryString(new Blob([input]));
-    });
-  };
-
   JSH.prototype.toDataURL = function (contentType) {
     // TODO check contentType with regex?
     // TODO remove /;base64(;|$)/ from contentType?
