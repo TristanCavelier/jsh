@@ -281,7 +281,7 @@
   exports.CancellablePromise = CancellablePromise;
 
 
-  var resolve = function (v) {
+  var jsh, resolve = function (v) {
     return new CancellablePromise(function (r) {
       r(v);
     });
@@ -1329,7 +1329,8 @@
     });
   };
 
-  exports.jsh = new JSH();
+  exports.JSH = JSH;
+  exports.jsh = jsh = new JSH();
 
 }((function () {
   "use strict";
