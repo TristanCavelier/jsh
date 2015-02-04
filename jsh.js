@@ -913,6 +913,17 @@
     });
   };
 
+  JSH.prototype.grep = function (regex) {
+    var matches = [];
+    return this.forEachLine(function (line) {
+      if (regex.test(line)) {
+        matches.push(line);
+      }
+    }).then(function () {
+      return matches.join("\n");
+    });
+  };
+
   JSH.prototype.waitAll = function () {
     return this.then(function (array) {
       return CancellablePromise.all(array);
