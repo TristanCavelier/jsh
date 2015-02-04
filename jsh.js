@@ -1025,8 +1025,24 @@
     };
   }
 
-  JSH.prototype.base64 = basicEncoder(btoa);
-  JSH.prototype.unbase64 = basicDecoder(atob);
+  JSH.prototype.base64 = function () {
+    return this.toArrayBuffer().then(function (arrayBuffer) {
+      var bs = "", ua = new Uint8Array(arrayBuffer), l = ua.length, i;
+      for (i = 0; i < l; i += 1) {
+        bs += String.fromCharCode(ua[i]);
+      }
+      return bs;
+    }).then(btoa);
+  };
+  JSH.prototype.unbase64 = function () {
+    return this.toText().then(atob).then(function (binaryString) {
+      var ua = new Uint8Array(binaryString.length), i;
+      for (i = 0; i < binaryString.length; i += 1) {
+        ua[i] = binaryString.charCodeAt(i);
+      }
+      return new Blob([ua.buffer]);
+    });
+  };
 
   function btoh(binaryString) {
     var r = "", i;
