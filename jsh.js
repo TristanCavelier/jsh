@@ -1047,39 +1047,6 @@
     return jsh.ifelse(tester, callback);
   };
 
-  function basicEncoder(encoder) {
-    return function (value) {
-      var it = this;
-      return it.then(function (input) {
-        var p;
-        if (value !== undefined) { input = value; }
-        if (input === undefined || input === null) {
-          p = toThenable("");
-        } else if (input instanceof Blob) {
-          p = readBlobAsBinaryString(input);
-        } else if (input instanceof ArrayBuffer) {
-          p = toThenable(arrayBufferToBinaryString(input));
-        } else if (input.buffer instanceof ArrayBuffer) {
-          p = toThenable(arrayBufferToBinaryString(input.buffer));
-        } else {
-          p = readBlobAsBinaryString(new Blob([input]));
-        }
-        return p.then(encoder);
-      });
-    };
-  }
-
-  function basicDecoder(decoder) {
-    return function (value) {
-      // TODO ignore garbage
-      return this.then(function (input) {
-        if (value !== undefined) { input = value; }
-        // should already ignores newlines
-        return new Blob([binaryStringToArrayBuffer(decoder(input))]);
-      });
-    };
-  }
-
   JSH.prototype.base64 = function () {
     return this.toArrayBuffer().then(function (arrayBuffer) {
       var bs = "", ua = new Uint8Array(arrayBuffer), l = ua.length, i;
@@ -1128,8 +1095,24 @@
   }
   exports.htob = htob;
 
-  JSH.prototype.hex = basicEncoder(btoh);
-  JSH.prototype.unhex = basicDecoder(htob);
+  JSH.prototype.hex = function () {
+    return this.toArrayBuffer().then(function (arrayBuffer) {
+      var bs = "", ua = new Uint8Array(arrayBuffer), l = ua.length, i;
+      for (i = 0; i < l; i += 1) {
+        bs += String.fromCharCode(ua[i]);
+      }
+      return bs;
+    }).then(btoh);
+  };
+  JSH.prototype.unhex = function () {
+    return this.toText().then(htob).then(function (binaryString) {
+      var ua = new Uint8Array(binaryString.length), i;
+      for (i = 0; i < binaryString.length; i += 1) {
+        ua[i] = binaryString.charCodeAt(i);
+      }
+      return new Blob([ua.buffer]);
+    });
+  };
 
   JSH.prototype.wrapLines = function (wrap) {
     // TODO make it cancellable
