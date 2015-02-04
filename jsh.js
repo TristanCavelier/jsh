@@ -507,43 +507,6 @@
     });
   }
 
-  function promiseBasedWhile(tester, loop) {
-    var cancelled, currentPromise;
-    return new CancellablePromise(function (done, fail) {
-      function onCancel() {
-        fail(new Error("Cancelled"));
-      }
-      function wrappedTester() {
-        if (cancelled) { return onCancel(); }
-        return tester();
-      }
-      function wrappedLoop() {
-        if (cancelled) { return onCancel(); }
-        return loop();
-      }
-      function recWithLoop() {
-        currentPromise = seq([wrappedTester, function (result) {
-          if (result) { return seq([wrappedLoop, recWithLoop]); }
-          done();
-        }, [null, fail]]);
-      }
-      function recWithoutLoop() {
-        currentPromise = seq([wrappedTester, function (result) {
-          if (result) { return recWithoutLoop(); }
-          done();
-        }, [null, fail]]);
-      }
-      if (typeof loop === "function") {
-        recWithLoop();
-      } else {
-        recWithoutLoop();
-      }
-    }, function () {
-      cancelled = true;
-      currentPromise.cancel(); // can throw, don't care
-    });
-  }
-
   function toThenable(v) {
     if (v && typeof v.then === "function") { return v; }
     return {then: function (done) {
@@ -878,11 +841,13 @@
     return this.then(function (array) {
       if (array.length === 0) { return; }
       var i = 0;
-      return promiseBasedWhile(function () {
-        return toThenable(callback(array[i], i, array)).then(function () {
-          i += 1;
-          return i < array.length;
-        });
+      function wrappedCallback() { return callback(array[i], i, array); }
+      function afterCallback() {
+        i += 1;
+        return i < array.length;
+      }
+      return jsh.while(function () {
+        return jsh.then(wrappedCallback).then(afterCallback);
       }).then(function () { return array; });
     });
   };
@@ -892,12 +857,14 @@
     return this.then(function (array) {
       if (array.length === 0) { return newArray; }
       var i = 0;
-      return promiseBasedWhile(function () {
-        return toThenable(callback(array[i], i, array)).then(function (value) {
-          newArray[i] = value;
-          i += 1;
-          return i < array.length;
-        });
+      function wrappedCallback() { return callback(array[i], i, array); }
+      function afterCallback(value) {
+        newArray[i] = value;
+        i += 1;
+        return i < array.length;
+      }
+      return jsh.while(function () {
+        return jsh.then(wrappedCallback).then(afterCallback);
       }).then(function () { return newArray; });
     });
   };
@@ -908,12 +875,14 @@
       if (array.length === 0) { return array; }
       _array = array;
       var i = 0;
-      return promiseBasedWhile(function () {
-        return toThenable(callback(array[i], i, array)).then(function (value) {
-          array[i] = value;
-          i += 1;
-          return i < array.length;
-        });
+      function wrappedCallback() { return callback(array[i], i, array); }
+      function afterCallback(value) {
+        array[i] = value;
+        i += 1;
+        return i < array.length;
+      }
+      return jsh.while(function () {
+        return jsh.then(wrappedCallback).then(afterCallback);
       }).then(function () { return _array; });
     });
   };
@@ -981,23 +950,57 @@
         if (step < 0) { tester = function () { return start > end; }; }
       }
       function incrementStart() { start += step; }
-      return promiseBasedWhile(tester, function () {
-        return new JSH(callback(start, input)).then(incrementStart);
+      function wrappedCallback() { return callback(start, input); }
+      return jsh.while(tester, function () {
+        return jsh.then(wrappedCallback).then(incrementStart);
       });
     });
   };
 
-  JSH.prototype.loop = function (callback) {
-    // Infinite loop until fail
+  JSH.prototype.while = function (tester, loop) {
     return this.then(function (input) {
-      if (typeof callback !== "function") {
-        throw new Error("loop: callback is not a function");
+      var d = defer(), cancelled, currentPromise;
+      d.oncancel = function () {
+        cancelled = true;
+        currentPromise.cancel(); // can throw, don't care
+      };
+      function cancel() {
+        d.reject(new Error("Cancelled"));
       }
-      var next = new Promise(function (r) { r(input); });
-      return promiseBasedWhile(function () {
-        return next.then(callback).then(returnTrue);
-      });
+      function wrappedTester() {
+        if (cancelled) { return cancel(); }
+        return tester(input);
+      }
+      function wrappedLoop() {
+        if (cancelled) { return cancel(); }
+        return loop(input);
+      }
+      function recWithLoop() {
+        currentPromise = jsh.then(wrappedTester).then(function (result) {
+          if (result) { return jsh.then(wrappedLoop).then(recWithLoop); }
+          d.resolve();
+        }).then(null, d.reject);
+      }
+      function recWithoutLoop() {
+        currentPromise = jsh.then(wrappedTester).then(function (result) {
+          if (result) { return recWithoutLoop(); }
+          d.resolve();
+        }).then(null, d.reject);
+      }
+      if (typeof loop === "function") {
+        recWithLoop();
+      } else {
+        recWithoutLoop();
+      }
+      return d.promise;
     });
+  };
+
+  JSH.prototype.loop = function (callback) {
+    // Infinite loop until error
+    return this.while(function () {
+      return true;
+    }, callback);
   };
 
   function basicEncoder(encoder) {
