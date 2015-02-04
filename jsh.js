@@ -647,6 +647,9 @@
     // TODO check contentType with regex?
     // TODO remove /;base64(;|$)/ from contentType?
     return this.base64().then(function (input) {
+      if (contentType === undefined) {
+        contentType = "application/octet-stream";
+      }
       return "data:" + contentType + ";base64," + input;
     });
   };
