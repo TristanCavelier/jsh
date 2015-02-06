@@ -892,6 +892,27 @@
     });
   };
 
+  JSH.prototype.filter = function (tester, reverse) {
+    // tester can be an object with a `test` method, a function or a simple value
+    var _tester = function (value) { return value === tester; },
+      newArray = [],
+      reverse = reverse && reverse.reverse || reverse === "reverse";
+    if (tester) {
+      if (typeof tester.test === "function") {
+        _tester = function (value) { return tester.test(value); };
+      } else if (typeof tester === "function") {
+        _tester = tester;
+      }
+    }
+    return this.forEach(function (value, index, array) {
+      return jsh.ifelse(
+        _tester.bind(null, value, index, array),
+        reverse ? null : function () { newArray.push(value); },
+        reverse ? function () { newArray.push(value); } : null
+      );
+    }).then(function () { return newArray; });
+  };
+
   JSH.prototype.forEachSlice = function (size, callback) {
     return this.toSlices(size).forEach(callback);
   };
@@ -916,15 +937,8 @@
     });
   };
 
-  JSH.prototype.grep = function (regex) {
-    var matches = [];
-    return this.forEachLine(function (line) {
-      if (regex.test(line)) {
-        matches.push(line);
-      }
-    }).then(function () {
-      return matches.join("\n");
-    });
+  JSH.prototype.grep = function (regex, reverse) {
+    return this.toText().split("\n").filter(regex, reverse).join("\n");
   };
 
   JSH.prototype.waitAll = function () {
