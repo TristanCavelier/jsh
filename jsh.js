@@ -466,40 +466,24 @@
   }
 
   function readBlobAsText(blob) {
-    var fr;
-    return new CancellablePromise(function (resolve, reject) {
-      fr = new FileReader();
-      fr.onload = function (ev) { return resolve(ev.target.result); };
-      fr.onerror = function () { return reject(new Error("Unable to read blob as text")); };
-      fr.readAsText(blob);
-    }, function () {
-      fr.abort();
-    });
+    var d = defer(), fr = new FileReader();
+    fr.onload = function (ev) { return d.resolve(ev.target.result); };
+    fr.onerror = function () { return d.reject(new Error("Unable to read blob as text")); };
+    d.oncancel = function () { fr.abort(); };
+    fr.readAsText(blob);
+    return d.promise;
   }
+  exports.readBlobAsText = readBlobAsText;
 
   function readBlobAsArrayBuffer(blob) {
-    var fr;
-    return new CancellablePromise(function (resolve, reject) {
-      fr = new FileReader();
-      fr.onload = function (ev) { return resolve(ev.target.result); };
-      fr.onerror = function () { return reject(new Error("Unable to read blob as ArrayBuffer")); };
-      fr.readAsArrayBuffer(blob);
-    }, function () {
-      fr.abort();
-    });
+    var d = defer(), fr = new FileReader();
+    fr.onload = function (ev) { return resolve(ev.target.result); };
+    fr.onerror = function () { return reject(new Error("Unable to read blob as ArrayBuffer")); };
+    d.oncancel = function () { fr.abort(); };
+    fr.readAsArrayBuffer(blob);
+    return d.promise;
   }
-
-  function readBlobAsBinaryString(blob) {
-    var fr;
-    return new CancellablePromise(function (resolve, reject) {
-      fr = new FileReader();
-      fr.onload = function (ev) { return resolve(ev.target.result); };
-      fr.onerror = function () { return reject(new Error("Unable to read blob as binary string")); };
-      fr.readAsBinaryString(blob);
-    }, function () {
-      fr.abort();
-    });
-  }
+  exports.readBlobAsArrayBuffer = readBlobAsArrayBuffer;
 
   function noCancel(promise) {
     return new Promise(function (done, fail) {
