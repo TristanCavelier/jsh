@@ -1113,58 +1113,55 @@
       } else {
         param[param.inputKey] = input;
       }
-      var xhr = new XMLHttpRequest();
-      return new CancellablePromise(function (done, fail) {
-        var k;
-        xhr.open((param.method || "GET").toUpperCase(), param.url || param.uri, true);
-        xhr.responseType = param.responseType || "";
-        if (param.overrideMimeType) {
-          xhr.overrideMimeType(param.overrideMimeType);
-        }
-        if (param.withCredentials !== undefined) {
-          xhr.withCredentials = param.withCredentials;
-        }
-        if (param.headers) {
-          for (k in param.headers) {
-            if (param.headers.hasOwnProperty(k)) {
-              xhr.setRequestHeader(k, param.headers[k]);
-            }
+      var d = defer(), xhr = new XMLHttpRequest(), k;
+      d.oncancel = function () { xhr.abort(); };
+      xhr.open((param.method || "GET").toUpperCase(), param.url || param.uri, true);
+      xhr.responseType = param.responseType || "";
+      if (param.overrideMimeType) {
+        xhr.overrideMimeType(param.overrideMimeType);
+      }
+      if (param.withCredentials !== undefined) {
+        xhr.withCredentials = param.withCredentials;
+      }
+      if (param.headers) {
+        for (k in param.headers) {
+          if (param.headers.hasOwnProperty(k)) {
+            xhr.setRequestHeader(k, param.headers[k]);
           }
         }
-        xhr.addEventListener("load", function (e) {
-          if (param.getEvent) { return done(e); }
-          var r;
-          if (e.target.status < 400) {
-            r = headersAsKeyValue(e.target.getAllResponseHeaders());
-            r.data = e.target.response;
-            return done(r);
-          }
-          r = new Error("request: " + (e.target.statusText || "unknown error"));
-          r.status = e.target.status;
-          return fail(r);
-        }, false);
-        xhr.addEventListener("error", function (e) {
-          if (param.getEvent) { return done(e); }
-          return fail(new Error("request: error"));
-        }, false);
-        xhr.addEventListener("abort", function (e) {
-          if (param.getEvent) { return done(e); }
-          return fail(new Error("request: aborted"));
-        }, false);
-        if (param.xhrFields) {
-          for (k in param.xhrFields) {
-            if (param.xhrFields.hasOwnProperty(k)) {
-              xhr[k] = param.xhrFields[k];
-            }
+      }
+      xhr.addEventListener("load", function (e) {
+        if (param.getEvent) { return d.resolve(e); }
+        var r;
+        if (e.target.status < 400) {
+          r = headersAsKeyValue(e.target.getAllResponseHeaders());
+          r.data = e.target.response;
+          return d.resolve(r);
+        }
+        r = new Error("request: " + (e.target.statusText || "unknown error"));
+        r.status = e.target.status;
+        return d.reject(r);
+      }, false);
+      xhr.addEventListener("error", function (e) {
+        if (param.getEvent) { return d.resolve(e); }
+        return d.reject(new Error("request: error"));
+      }, false);
+      xhr.addEventListener("abort", function (e) {
+        if (param.getEvent) { return d.resolve(e); }
+        return d.reject(new Error("request: aborted"));
+      }, false);
+      if (param.xhrFields) {
+        for (k in param.xhrFields) {
+          if (param.xhrFields.hasOwnProperty(k)) {
+            xhr[k] = param.xhrFields[k];
           }
         }
-        if (typeof param.beforeSend === 'function') {
-          param.beforeSend(xhr);
-        }
-        xhr.send(param.data);
-      }, function () {
-        xhr.abort();
-      });
+      }
+      if (typeof param.beforeSend === 'function') {
+        param.beforeSend(xhr);
+      }
+      xhr.send(param.data);
+      return d.promise;
     });
   };
 
