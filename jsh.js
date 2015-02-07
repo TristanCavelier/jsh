@@ -639,7 +639,7 @@
       if (typeof input === "string") {
         return input;
       }
-      return readBlobAsText(new Blob([input]));
+      return readBlobAsArrayBuffer(new Blob([input]));
     });
   };
 
