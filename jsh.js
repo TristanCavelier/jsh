@@ -10,7 +10,8 @@
 
   /*jslint nomen: true */
   /*global console, setTimeout, clearTimeout, prompt, alert, btoa, atob,
-           Blob, ArrayBuffer, XMLHttpRequest, FileReader, Uint8Array */
+           localStorage, document, open,
+           Blob, ArrayBuffer, XMLHttpRequest, FileReader, Uint8Array, URL */
 
   function CancellablePromise(executor, canceller) {
     this._canceller = canceller;
@@ -372,7 +373,7 @@
      * @param  {String} mimetype The data type.
      * @param  {Any} data The data to download.
      */
-    data = window.URL.createObjectURL(new Blob([data], {"type": mimetype}));
+    data = URL.createObjectURL(new Blob([data], {"type": mimetype}));
     var a = document.createElement("a");
     if (a.download !== undefined) {
       a.download = filename;
@@ -382,7 +383,7 @@
       a.click();
       a.remove();
     } else {
-      window.open(data);
+      open(data);
     }
   }
 
@@ -787,8 +788,8 @@
   JSH.prototype.filter = function (tester, reverse) {
     // tester can be an object with a `test` method, a function or a simple value
     var _tester = function (value) { return value === tester; },
-      newArray = [],
-      reverse = reverse && reverse.reverse || reverse === "reverse";
+      newArray = [];
+    reverse = (reverse && reverse.reverse) || reverse === "reverse";
     if (tester) {
       if (typeof tester.test === "function") {
         _tester = function (value) { return tester.test(value); };
@@ -1171,8 +1172,7 @@
     return function (uri) {
       var it = this;
       return it.then(function () {
-        var _uri = uri && uri.uri || uri;
-        var tmp = (/^([a-z]+):/).exec(_uri);
+        var _uri = (uri && uri.uri) || uri, tmp = (/^([a-z]+):/).exec(_uri);
         if (tmp) {
           tmp = method +
                 tmp[1].slice(0, 1).toUpperCase() + tmp[1].slice(1).toLowerCase() +
@@ -1199,8 +1199,8 @@
         "withCredentials": true
       }, verbose;
       return this.then(function () {
-        obj.uri = uri && uri.uri || uri;
-        if (uri && uri.verbose || false) { verbose = true }
+        obj.uri = (uri && uri.uri) || uri;
+        if ((uri && uri.verbose) || false) { verbose = true; }
       }).ajax(obj).then(function (e) {
         if (verbose) { return e; }
         return e.data;
@@ -1277,7 +1277,7 @@
   };
 
   JSH.prototype.img = function (mime) {
-    return this.toDataURL(mime && mime.contentType || mime || "").then(function (input) {
+    return this.toDataURL((mime && mime.contentType) || mime || "").then(function (input) {
       var i = document.createElement("img");
       i.src = input;
       return i;
