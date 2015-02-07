@@ -290,7 +290,7 @@
       /*jslint unparam: true */
       r(v);
     });
-  }, resolved = resolve(), seq = CancellablePromise.sequence, defer = CancellablePromise.defer;
+  }, defer = CancellablePromise.defer;
 
   function JSH(promise, onDone, onFail, previous) {
     var it = this;
@@ -362,35 +362,6 @@
   };
 
 
-  function emptyFunction() { return; }
-  function returnTrue() { return true; }
-
-  function asString(value) {
-    if (value === undefined) {
-      return "undefined";
-    }
-    if (value === null) {
-      return "null";
-    }
-    return value.toString();
-  }
-
-  function objectUpdate(o1, o2) {
-    Object.keys(o2).forEach(function (key) {
-      o1[key] = o2[key];
-    });
-    return o1;
-  }
-
-  function objectSetDefaults(o1, o2) {
-    Object.keys(o2).forEach(function (key) {
-      if (o1[key] !== undefined) {
-        o1[key] = o2[key];
-      }
-    });
-    return o1;
-  }
-
   function saveAs(filename, mimetype, data) {
     /**
      * Allows the user to download `data` as a file which name is defined by
@@ -415,56 +386,6 @@
     }
   }
 
-  function range() {
-    var args = [].reduce.call(arguments, function (prev, value) {
-      var t = typeof value;
-      if (t === "number" && isNaN(t)) { return prev; }
-      prev[t] = prev[t] || [];
-      prev[t].push(value);
-    }, {}), start, end, step, tester, callback;
-    if (args.number.length < 1) {
-      throw new Error("range() At least one number is required");
-    }
-    if (args.function.length < 1) {
-      throw new Error("range() One function is required");
-    }
-    callback = args.function[0];
-    tester = function () { return start < end; };
-    if (args.number.length === 1) {
-      start = 0;
-      end = args.number[0];
-      step = 1;
-    } else if (args.number.length === 2) {
-      start = args.number[0];
-      end = args.number[1];
-      step = 1;
-    } else {
-      start = args.number[0];
-      end = args.number[1];
-      step = args.number[2];
-      if (step === 0) { throw new Error("range() step must not be zero"); }
-      if (step < 0) { tester = function () { return start > end; }; }
-    }
-    while (tester()) {
-      callback(start);
-      start += step;
-    }
-  }
-
-  function arrayBufferToBinaryString(arrayBuffer) {
-    return [].reduce.call(new Uint8Array(arrayBuffer), function (prev, b) {
-      return prev + String.fromCharCode(b);
-    }, "");
-  }
-
-  function binaryStringToArrayBuffer(binaryString) {
-    var ua = new Uint8Array(binaryString.length), i;
-    for (i = 0; i < binaryString.length; i += 1) {
-      ua[i] = binaryString.charCodeAt(i);
-    }
-    return ua.buffer;
-  }
-
   function readBlobAsText(blob) {
     var d = defer(), fr = new FileReader();
     fr.onload = function (ev) { return d.resolve(ev.target.result); };
@@ -484,19 +405,6 @@
     return d.promise;
   }
   exports.readBlobAsArrayBuffer = readBlobAsArrayBuffer;
-
-  function noCancel(promise) {
-    return new Promise(function (done, fail) {
-      promise.then(done, fail);
-    });
-  }
-
-  function toThenable(v) {
-    if (v && typeof v.then === "function") { return v; }
-    return {then: function (done) {
-      return toThenable(done(v));
-    }};
-  }
 
 
   JSH.prototype.addMethod = function (name, method) {
@@ -1224,12 +1132,15 @@
         }
         xhr.addEventListener("load", function (e) {
           if (param.getEvent) { return done(e); }
+          var r;
           if (e.target.status < 400) {
-            var r = headersAsKeyValue(e.target.getAllResponseHeaders());
+            r = headersAsKeyValue(e.target.getAllResponseHeaders());
             r.data = e.target.response;
             return done(r);
           }
-          return fail(objectUpdate(new Error("request: " + (e.target.statusText || "unknown error")), {"status": e.target.status}));
+          r = new Error("request: " + (e.target.statusText || "unknown error"));
+          r.status = e.target.status;
+          return fail(r);
         }, false);
         xhr.addEventListener("error", function (e) {
           if (param.getEvent) { return done(e); }
@@ -1310,7 +1221,9 @@
     return this.then(function () {
       var v = localStorage.getItem(uri.replace(/^localstorage:/, ""));
       if (v === null) {
-        throw objectUpdate(new Error("localStorage: Not Found"), {"status": 404});
+        v = new Error("localStorage: Not Found");
+        v.status = 404;
+        throw v;
       }
       return new Blob([v]);
     });
@@ -1331,7 +1244,7 @@
     // TODO replace prompt by this function?
     // TODO add option.placeholder
     return this.then(function () {
-      var canceller = emptyFunction;
+      var canceller = function () { return; };
       return new CancellablePromise(function (done, fail) {
         var textarea = document.createElement("textarea");
         textarea.style.position = "absolute";
