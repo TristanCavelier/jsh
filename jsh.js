@@ -1215,8 +1215,75 @@
   JSH.prototype.getHttpsURI = methodHttpURI("GET");
   JSH.prototype.putHttpsURI = methodHttpURI("PUT");
   JSH.prototype.deleteHttpsURI = methodHttpURI("DELETE");
-  JSH.prototype.getDataURI = methodHttpURI("GET");
   JSH.prototype.getFileURI = methodHttpURI("GET");
+
+  function dataURIParse(dataURI) {
+    /*jslint regexp: true */
+    if (dataURI.slice(0, 5) !== "data:") {
+      return null;
+    }
+    var mimetype, charset, base64 = false, toComma, data;
+    data = dataURI.slice(5).replace(/^[^,]*,/, function (match) {
+      toComma = match;
+      return "";
+    });
+    if (toComma === undefined) { return null; }
+    toComma = toComma.replace(/^\s*([a-z]+\/[a-zA-Z_\-\.\+]+)\s*[;,]/, function (match, group1) {
+      /*jslint unparam: true */
+      mimetype = group1;
+      return ";";
+    });
+    toComma = toComma.replace(/;\s*charset\s*=\s*([0-9a-z_\-\.]+)\s*[;,]/i, function (match, group1) {
+      /*jslint unparam: true */
+      charset = group1;
+      return ";";
+    });
+    toComma.replace(/;\s*base64\s*[;,]/i, function () {
+      base64 = true;
+    });
+    data = decodeURIComponent(data);
+    if (mimetype && base64) {
+      try {
+        data = atob(data);
+      } catch (ignored) {
+        return null;
+      }
+      data = [].reduce.call(data, function (ua, chr, i) {
+        console.log(arguments);
+        ua[i] = chr.charCodeAt(0);
+        return ua;
+      }, new Uint8Array(data.length)).buffer;
+    }
+    if (mimetype) {
+      if (charset) {
+        charset = ";charset=" + (charset || "US-ASCII");
+      }
+    } else {
+      mimetype = "text/plain";
+      charset = ";charset=US-ASCII";
+    }
+    return new Blob([data], {type: mimetype + (charset || "")});
+  }
+  exports.dataURIParse = dataURIParse;
+
+  JSH.prototype.getDataURI = function (uri) {
+    return this.then(function () {
+      var _uri, verbose;
+      _uri = (uri && uri.uri) || uri;
+      if ((uri && uri.verbose) || false) { verbose = true; }
+      if (verbose) {
+        verbose = dataURIParse(_uri);
+        return {
+          "method": "GET",
+          "uri": _uri,
+          "data": verbose,
+          "Content-Length": verbose.size,
+          "Content-Type": verbose.type
+        };
+      }
+      return dataURIParse(_uri);
+    });
+  };
 
   JSH.prototype.getLocalstorageURI = function (uri) {
     return this.then(function () {
