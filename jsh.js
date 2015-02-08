@@ -1199,7 +1199,11 @@
         obj.uri = (uri && uri.uri) || uri;
         if ((uri && uri.verbose) || false) { verbose = true; }
       }).ajax(obj).then(function (e) {
-        if (verbose) { return e; }
+        if (verbose) {
+          e.method = method;
+          e.uri = obj.uri;
+          return e;
+        }
         return e.data;
       });
     };
