@@ -535,7 +535,7 @@
     });
   };
 
-  JSH.prototype.toDataURL = function (contentType) {
+  JSH.prototype.toDataURI = function (contentType) {
     // TODO check contentType with regex?
     // TODO remove /;base64(;|$)/ from contentType?
     return this.base64().then(function (input) {
@@ -545,6 +545,7 @@
       return "data:" + contentType + ";base64," + input;
     });
   };
+  JSH.prototype.toDataURL = JSH.prototype.toDataURI;
 
   JSH.prototype.sleep = function (ms) {
     return this.then(function (input) {
