@@ -1,5 +1,5 @@
 /*jslint indent: 2 */
-(function (exports) {
+(function (realExports, exports) {
   "use strict";
   /*! Copyright (c) 2015 Tristan Cavelier <t.cavelier@free.fr>
       This program is free software. It comes without any warranty, to
@@ -1362,8 +1362,15 @@
   exports.JSH = JSH;
   exports.jsh = jsh = new JSH();
 
+  jsh.exports = exports;
+  Object.keys(exports).forEach(function (key) {
+    if (realExports[key] === undefined) {
+      realExports[key] = exports[key];
+    }
+  });
+
 }((function () {
   "use strict";
   /*global window, exports */
   try { return exports; } catch (ignored) { return window; }
-}())));
+}()), {}));
