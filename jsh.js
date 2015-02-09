@@ -518,6 +518,9 @@
   JSH.prototype.toArrayBuffer = function () {
     // TODO if input === undefined, return undefined too ?
     return this.then(function (input) {
+      if (input === undefined || input === null) {
+        return new ArrayBuffer(0);
+      }
       if (input instanceof Blob) {
         return readBlobAsArrayBuffer(input);
       }
@@ -526,12 +529,6 @@
       }
       if (input.buffer instanceof ArrayBuffer) {
         return input.buffer;
-      }
-      if (input === undefined || input === null) {
-        return "";
-      }
-      if (typeof input === "string") {
-        return input;
       }
       return readBlobAsArrayBuffer(new Blob([input]));
     });
