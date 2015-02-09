@@ -441,13 +441,12 @@
     });
   };
 
-  JSH.prototype.prompt = function (message) {
-    return this.then(function (_message) {
-      if (message !== undefined) { _message = message; }
-      if (_message !== undefined) {
-        return prompt(_message);
-      }
-      return prompt();
+  JSH.prototype.prompt = function (message, _input) {
+    return this.then(function (input) {
+      if (message === undefined) { message = ""; }
+      if (_input !== undefined) { return prompt(message, _input); }
+      if (input !== undefined) { return prompt(message, input); }
+      return prompt(message);
     });
   };
 
