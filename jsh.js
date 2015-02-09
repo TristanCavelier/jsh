@@ -944,7 +944,7 @@
   };
 
   JSH.prototype.if = function (tester, callback) {
-    return jsh.ifelse(tester, callback);
+    return this.ifelse(tester, callback);
   };
 
   JSH.prototype.base64 = function () {
