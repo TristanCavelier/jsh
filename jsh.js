@@ -400,8 +400,8 @@
 
   function readBlobAsArrayBuffer(blob) {
     var d = defer(), fr = new FileReader();
-    fr.onload = function (ev) { return resolve(ev.target.result); };
-    fr.onerror = function () { return reject(new Error("Unable to read blob as ArrayBuffer")); };
+    fr.onload = function (ev) { return d.resolve(ev.target.result); };
+    fr.onerror = function () { return d.reject(new Error("Unable to read blob as ArrayBuffer")); };
     fr.onabort = function () { return d.reject(new Error("Cancelled")); };
     d.oncancel = function () { fr.abort(); };
     fr.readAsArrayBuffer(blob);
