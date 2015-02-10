@@ -1248,7 +1248,6 @@
         return null;
       }
       data = [].reduce.call(data, function (ua, chr, i) {
-        console.log(arguments);
         ua[i] = chr.charCodeAt(0);
         return ua;
       }, new Uint8Array(data.length)).buffer;
