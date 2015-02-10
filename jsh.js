@@ -929,7 +929,7 @@
     var input;
     return this.then(function (_input) {
       input = _input;
-      return tester();
+      return tester(input);
     }).then(function (result) {
       if (result) {
         if (typeof onOk === "function") {
